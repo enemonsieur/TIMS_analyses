@@ -1,0 +1,31 @@
+SIM_BUILD = ./build
+COCOTB_RESULTS_FILE = $(SIM_BUILD)/results.xml
+
+SIM = VERILATOR
+COMPILE_ARGS = -Wno-WIDTHTRUNC -Wno-WIDTHEXPAND
+EXTRA_ARGS += --trace --trace-fst --trace-structs
+WAVES = 1
+
+
+SRC_DIR = ../..
+
+VERILOG_INCLUDE_DIRS = $(SRC_DIR)
+
+MODULE = test
+
+export PYTHONPATH := $(PYTHONPATH):../../..
+
+CUSTOM_COMPILE_DEPS += ../../config.sv ./memfiles
+
+include $(shell cocotb-config --makefiles)/Makefile.sim
+
+../../config.sv: ../../../config.py
+	python ../../../config.py
+
+./memfiles: ../../config.sv
+	python ../../../config.py
+	rm -rf ./memfiles
+	cp -r ../../memfiles ./memfiles
+
+view_waveforms:
+	gtkwave dump.fst

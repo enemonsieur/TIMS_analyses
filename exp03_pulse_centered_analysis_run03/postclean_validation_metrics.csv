@@ -1,0 +1,5 @@
+method,status,n_epochs,n_channels,coherence_8_12,plv_8_12,timecorr_validation_window,ref_baseline_rms_uv,ref_presync_peak_abs_uv,ref_main_peak_abs_uv,notes
+clean_only,ok,30,12,0.9802349588965606,0.1069959904446451,0.07190163499385734,2114.3856063934873,7107.911677134498,12008.570049144744,HPF (IIR Butterworth order 4) applied at 1.000 Hz before denoising.
+ica_auto,ok,30,12,0.9824345156854191,0.10695555493871485,0.07304942419102768,2198.5992941870095,7227.938261828726,8627.448771222469,"HPF (IIR Butterworth order 4) applied at 1.000 Hz before denoising. ICA auto-excluded components=[1, 2] (top 2 by pulse/baseline source score)."
+ssp,ok,30,12,0.2749098558339695,0.09502163844189668,-0.001507163942766641,234.39345128413683,2254.9197813210576,17.03143852676795,HPF (IIR Butterworth order 4) applied at 1.000 Hz before denoising. SSP projectors applied: n_eeg=2
+sound,skipped,30,12,nan,nan,nan,nan,nan,nan,SOUND unavailable in environment: No module named 'sound'

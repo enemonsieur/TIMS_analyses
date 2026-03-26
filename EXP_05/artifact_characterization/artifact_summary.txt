@@ -1,0 +1,72 @@
+exp05 artifact characterization
+
+Protocol reference from ctbs_like_v1_amp5hz_mod50hz_triplets.py
+expected_on_s=1.995
+expected_off_s=3.000
+expected_cycle_s=4.995
+
+Measured STIM timing
+100_blocks=100
+100_on_median_s=1.926
+100_on_range_s=[1.884, 2.045]
+100_off_median_s=3.074
+100_off_range_s=[2.955, 3.078]
+100_cycle_median_s=5.000
+30_blocks=63
+30_on_median_s=1.925
+30_on_range_s=[1.884, 2.044]
+30_off_median_s=3.075
+30_off_range_s=[2.956, 3.079]
+30_cycle_median_s=5.000
+
+Measured STIM intensity
+100_peak=0.384995
+30_peak=0.210436
+peak_ratio_30_over_100=0.547
+100_active_rms=0.124172
+30_active_rms=0.067310
+active_rms_ratio_30_over_100=0.542
+
+Epoch counts
+baseline_epochs=62
+30_epochs=63
+100_epochs=100
+baseline_dc_pre_uv=0.138
+baseline_dc_on_uv=-0.034
+baseline_dc_off_uv=0.024
+30%_dc_pre_uv=-0.123
+30%_dc_on_uv=0.036
+30%_dc_off_uv=-0.029
+100%_dc_pre_uv=0.024
+100%_dc_on_uv=0.102
+100%_dc_off_uv=-0.063
+baseline_rms_on_uv=1.628
+baseline_rms_off_uv=1.632
+baseline_rms_post1_uv=1.631
+30%_rms_on_uv=24.906
+30%_rms_off_uv=5.705
+30%_rms_post1_uv=6.040
+100%_rms_on_uv=22.938
+100%_rms_off_uv=5.440
+100%_rms_post1_uv=6.121
+
+Cross-channel comparison
+channels_30_lt_100_on=30
+channels_30_lt_100_post1=31
+median_channel_on_ratio_30_over_100=0.003
+median_channel_post1_ratio_30_over_100=0.002
+Cz_on_ratio_30_over_100=1.086
+Cz_post1_ratio_30_over_100=0.987
+
+Common comparison window
+comparison_on_s=1.925
+comparison_off_s=3.074
+post1_window_s=1.000
+
+Decay fit
+30%_tau_s=0.544
+30%_fit_amp_uv=1467.651
+30%_fit_offset_uv=5.232
+100%_tau_s=0.550
+100%_fit_amp_uv=10544.599
+100%_fit_offset_uv=20.344

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"c:\\\\Users\\\\njeuk\\\\OneDrive\\\\Documents\\\\Charite Berlin\\\\TIMS\" -name \"*.py\" -type f -exec grep -l \"ssd\\\\|SSD\\\\|spectral.*decomposition\\\\|spatial.*spectral\" {})",
+      "Bash(find 'c:\\\\Users\\\\njeuk\\\\OneDrive\\\\Documents\\\\Charite Berlin\\\\TIMS' -maxdepth 1 -type f \\\\\\(-name README* -o -name readme* -o -name *.md \\\\\\))",
+      "Bash(python analyses_artifact_exp05.py)",
+      "Bash(python analyses_ssd_exp05.py)",
+      "Bash(python analyses_ica_topo_exp05.py)"
+    ]
+  }
+}

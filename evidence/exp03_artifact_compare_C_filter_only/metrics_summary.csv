@@ -1,0 +1,4 @@
+stage,plv,coherence_8_12,recovery_latency_ms,eval_window_start_s,eval_window_end_s
+01  Raw (no filter),0.994530101841466,1.0,80.0,0.08,0.3
+02  Crop post-pulse (0.08-1.0 s),0.994530101841466,1.0,80.0,0.08,0.3
+03  HPF 1.0 Hz on cropped,0.9968286132871573,1.0,80.0,0.08,0.3

@@ -1,0 +1,40 @@
+MODULE_NAME = sim
+QSPICE_DIR = "/mnt/c/Program Files/QSPICE"
+TEMP_DIR = "/mnt/c/tims_qspice_temp"
+
+BUILD_DIR = build
+
+QRAW_FILE = $(TEMP_DIR)/$(MODULE_NAME).qraw
+QRAW_FILE_WIN = $(shell wslpath -m $(QRAW_FILE))
+
+QSPICE = $(QSPICE_DIR)/QSPICE64.exe
+DMC = $(QSPICE_DIR)/dm/bin/dmc.exe
+VERILATOR = $(QSPICE_DIR)/dm/verilator/Verilator.exe
+QUX = $(QSPICE_DIR)/QUX.exe
+
+all: $(MODULE_NAME).dll params.sv
+	mkdir -p $(TEMP_DIR)
+	$(QSPICE) -r $(QRAW_FILE_WIN) $(MODULE_NAME).cir
+	$(QUX) $(QRAW_FILE_WIN)
+
+$(MODULE_NAME).dll: $(BUILD_DIR)/V$(MODULE_NAME).cpp ../$(MODULE_NAME).cpp params.sv
+	cd $(BUILD_DIR); \
+	$(DMC) -mn -WD ../../$(MODULE_NAME).cpp V$(MODULE_NAME)*.cpp verilated.lib kernel32.lib -o$(MODULE_NAME).dll -I.; \
+	mv $(MODULE_NAME).dll ../; \
+
+$(BUILD_DIR)/V$(MODULE_NAME).cpp: ../$(MODULE_NAME).sv params.sv
+	$(VERILATOR) --cc -Wno-LITENDIAN -Wno-WIDTH ../$(MODULE_NAME).sv --Mdir $(BUILD_DIR) --I../..
+
+params.sv: sim_params.py ../../../config.py
+	python ../../../config.py
+	PYTHONPATH=../../.. python sim_params.py
+	rm -rf ./memfiles
+	cp -r ../../memfiles ./memfiles
+
+clean:
+	rm -rf $(BUILD_DIR)
+	rm -rf $(TEMP_DIR)
+	rm -f $(MODULE_NAME).dll
+	rm params.sv
+	rm params.cir
+	rm -rf ./memfiles

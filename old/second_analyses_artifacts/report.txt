@@ -1,0 +1,110 @@
+TIMS PULSE ARTIFACT + GT RECOVERY REPORT (exp02 phantom)
+
+Files:
+- stim: /mnt/data/exp02-phantom-stim-pulse-10hz-GT-run01.vhdr
+- baseline: /mnt/data/exp02-phantom-baseline-run01.vhdr
+
+Sampling rate: 1000.00 Hz | n_eeg=31 | ref=Cz | GT=ground_truth | stim=stim
+
+STEP 0 — Pulse timing
+
+Detected pulses: 75
+
+IOI median/min/max: 4.0000 / 3.9990 / 4.0010 s
+
+Irregular IOIs (threshold <0.5× or >1.5× median): 0
+
+
+STEP 1 — Raw artifact characterization (Cz)
+
+Band summaries (Cz; 0.5–80* for 45–55 visibility):
+
+   condition       P_8_12      P_45_55  RMS_0p5_80
+    Baseline 5.878734e-12 6.754386e-14    0.000004
+Stim-OFF raw 6.564695e-07 3.341346e-07    0.005516
+ Stim-ON raw 1.663046e-07 1.920630e-06    0.006992
+
+
+
+STEP 2 — GT subspace (SSD on baseline + stim-OFF)
+
+Component scores (higher is better):
+
+ comp       eig      coh      plv   frac10  art_ratio    score
+    2  2.616158 0.803192 0.919825 0.443024   2.551085 0.128300
+    1  3.488170 0.712926 0.838428 0.219590   2.997796 0.043784
+    0 22.114311 0.679176 0.622199 0.162574   9.875342 0.006957
+    4  0.299767 0.191823 0.273541 0.136037   2.410713 0.002961
+    5  0.296990 0.245280 0.088061 0.134803   1.330331 0.002189
+    3  0.483968 0.031341 0.207203 0.102110   2.647891 0.000250
+
+
+Selected best GT component: GT-SSD C3
+
+
+STEP 3 — Artifact subspace (ON vs OFF, 0.5–45)
+
+ comp        eig      r_on    r_end
+    0 406.492342 20.130264 0.823236
+    1  12.985312  3.602966 0.526862
+    2   9.919648  3.171497 1.256302
+    3   5.852018  2.438274 0.711488
+    4   3.388916  1.840989 0.243975
+    5   2.382783  1.547915 0.655932
+    6   2.130900  1.464485 0.699519
+    7   1.750977  1.323349 0.682415
+
+
+Artifact subspace dimension used: k_art=8
+
+
+STEP 4/5 — Cleaning + GT recovery metrics
+
+Metrics table:
+
+                          method  coh10_off  coh10_post  plv_off  snr10_off_db    rms_on  rms_end  recov_coh_off_pct_vs_baselineCz  recov_snr_off_pct_vs_baselineCz
+                     Baseline Cz   0.920997         NaN 0.867669     10.452704       NaN      NaN                       100.000000                       100.000000
+                     Stim Cz raw   0.533372    0.361542 0.081690    -10.250790  0.006483 0.001661                         0.000000                         0.000000
+         Stim Cz cleaned (naive)   0.533947    0.482962 0.063729    -10.253395  0.006477 0.001666                         0.148314                        -0.012583
+  Stim Cz cleaned (GT-protected)   0.532062    0.379222 0.087380    -10.264668  0.006464 0.001668                        -0.337914                        -0.067035
+                   GT-SSD C3 raw   0.803192    0.761717 0.919825     -0.299687 11.061745 4.052728                        69.608327                        48.064846
+GT-SSD C3 cleaned (GT-protected)   0.803191    0.761717 0.919902     -0.299687 11.061745 4.052728                        69.608268                        48.064846
+
+
+
+Percent recovery definition (used for coherence@10 OFF and SNR10 OFF):
+
+  %Recovery = 100 * (metric_method - metric_rawCz) / (metric_baselineCz - metric_rawCz)
+
+
+Key recoveries vs baseline Cz:
+
+- Stim Cz cleaned (naive): coh recovery=0.15% | SNR recovery=-0.01%
+
+- Stim Cz cleaned (GT-protected): coh recovery=-0.34% | SNR recovery=-0.07%
+
+- GT-SSD C3 raw: coh recovery=69.61% | SNR recovery=48.06%
+
+
+
+Artifact suppression on Cz (RMS, 0.5–45):
+
+- naive: ON 0.098% | END-JUMP -0.305%
+
+- GT-protected: ON 0.299% | END-JUMP -0.430%
+
+
+Interpretation (data-driven):
+
+- Stim Cz OFF differs massively from baseline in power (see step1_band_summaries.csv and PSD plots), consistent with residual periodic artifact energy.
+
+- Pure artifact-subspace subtraction (ON vs OFF, 0.5–45) barely changes Cz RMS or OFF PSD, so it does not restore Cz→GT coherence/SNR in OFF.
+
+- GT extraction via SSD trained on clean windows works: GT-SSD C3 reaches coh@10 OFF=0.803 and PLV=0.920 on OFF.
+
+- Naive artifact subtraction overlaps with the GT subspace and can *degrade* GT metrics unless you protect the GT subspace (projection orthogonalized w.r.t. GT basis).
+
+
+Assumptions / deviations:
+*Baseline pulse-aligned plots use pseudo-onsets spaced every 4.0 s starting at the first stim onset time (baseline has no stim marker).
+*Band summary includes 45–55 Hz power computed on a wider (0.5–80) bandpassed signal to make that band visible (core broadband analyses remain 0.5–45).

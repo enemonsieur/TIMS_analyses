@@ -1,0 +1,25 @@
+SUBSPACE SEPARATION REPORT (RUN02 ~10s IOI)
+stim_file=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp02-phantom-stim-pulse-10hz-GT-run02.vhdr
+baseline_file=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp02-phantom-baseline-run01.vhdr
+sfreq=1000.0  ref=Cz  n_eeg=11  removed=['F7', 'FT9', 'FC5', 'C3', 'T7', 'TP9', 'CP5', 'Pz', 'P3', 'P7', 'O1', 'Oz', 'O2', 'P4', 'P8', 'TP10', 'CP6', 'CP2', 'T8', 'FT10']
+pulses=30  IOI_median=10.0000s
+
+best_GT_component=GT-C3
+scores (comp, coh_off, plv_off, snr10_dB, art_ratio):
+[(2, 0.1903886377076975, 0.14909511801724795, 10.887684416270476, 2.254113410675342), (5, 0.01903397846195678, 0.0341211627582169, 9.135985365410209, 1.6292456674968652), (0, 0.6416750854305957, 0.8608600576719025, 8.844716671667765, 5.112684378723857), (4, 0.051033792847424674, 0.07424989025158185, 9.801064716591574, 2.2318698695755756), (3, 0.03812354319547815, 0.07638237475794223, 9.318441434912833, 2.5442408874700817), (1, 0.4721488579647131, 0.689869941513028, 1.7536617528572482, 4.3586791780286545)]
+
+Metrics (OFF):
+  Baseline Cz : coh10=0.921  plv=0.868  snr10=36.45 dB
+  Cz raw      : coh10=0.268   plv=0.449   snr10=9.65 dB
+  Cz clean    : coh10=0.265   plv=0.223   snr10=9.80 dB
+  Cz GT-prot  : coh10=0.268   plv=0.423   snr10=9.73 dB
+  GT-C3 clean : coh10=0.283  plv=0.236  snr10=1.83 dB
+  GT-C3 GT-prot: coh10=0.190  plv=0.149  snr10=10.89 dB
+
+Post-stim coherence (1.05-2.0s): raw=0.486  clean=0.493  gtprot=0.516  GTcomp_clean=0.108  GTcomp_gtprot=0.164
+
+Artifact suppression RMS (Cz broadband):
+  ON  reduction: clean=0.45%  GT-prot=0.01%
+  END reduction: clean=0.38%  GT-prot=-0.12%
+
+%Recovery = 100*(metric_clean - metric_raw)/(metric_baseline - metric_raw)

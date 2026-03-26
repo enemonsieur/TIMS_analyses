@@ -1,0 +1,6 @@
+stage,plv,coherence_8_12,recovery_latency_ms,eval_window_start_s,eval_window_end_s
+01  Raw epoch (-2 to +1 s),0.994530101841466,1.0,80.0,0.08,0.3
+02  Interpolate -1.002 to +50 ms,0.994530101841466,1.0,80.0,0.08,0.3
+03  Crop post-pulse (0.08-1.0 s),0.994530101841466,1.0,80.0,0.08,0.3
+04  HPF 0.5 Hz on cropped,0.9958319780390533,1.0,80.0,0.08,0.3
+05  ICA after crop,0.9533460413292576,1.0,80.0,0.08,0.3

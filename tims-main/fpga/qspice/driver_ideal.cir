@@ -1,0 +1,11 @@
+* An ideal H-Bridge to be driven with phase-shift PWM
+
+.subckt driver_ideal
++                    pwm_a pwm_b pwm_c pwm_d
++                    out_pos out_neg pwm_eq
++                    params: vcc=90
+	E1 out_pos 0 pwm_a 0 {vcc}
+	E2 out_neg 0 pwm_c 0 {vcc}
+
+	B1 pwm_eq 0 V = V(pwm_a) - V(pwm_c)
+.ends

@@ -1,0 +1,60 @@
+* TEST
+
+.include ../driver_ideal.cir
+.include ../driver_hbridge.cir
+.include params.cir
+.include rlc_pair.cir
+
+Xrlc in1_pos in1_neg
++    in2_pos in2_neg
++    current1 current2
++    rlc_pair
++    R1={R1} L1={L1} C1={C1}
++    R2={R2} L2={L2} C2={C2}
++    coupling={COUPLING_FACTOR}
+
+Xdriver1 pwm_ch1a pwm_ch1b pwm_ch1c pwm_ch1d in1_pos in1_neg pwm_ch1eq driver_ideal
+Xdriver2 pwm_ch2a pwm_ch2b pwm_ch2c pwm_ch2d in2_pos in2_neg pwm_ch2eq driver_ideal
+
+Vvcc vcc 0 80
+*Xdriver1 pwm_ch1a pwm_ch1b pwm_ch1c pwm_ch1d in1_pos in1_neg pwm_ch1eq vcc driver_hbridge
+*Xdriver2 pwm_ch2a pwm_ch2b pwm_ch2c pwm_ch2d in2_pos in2_neg pwm_ch2eq vcc driver_hbridge
+
+Vclk clk 0 PULSE(0 1 0 1n 1n {0.5/FCLK} {1.0/FCLK})
+Vrst rst 0 0
+
+Vmag1set mag1_setpoint 0 PULSE(0, {AMPLITUDE1}, 0, {TRAMP})
+Vmag2set mag2_setpoint 0 PULSE(0, {AMPLITUDE2}, 0, {TRAMP})
+
+Vmod modulation 0 SINE(0.5 0.5 {FMOD} {TRAMP} 0 -90)
+*Vmod modulation 0 PULSE(1 0 0 1n 1n {0.5/FMOD} {1.0/FMOD})
+*Vmod modulation 0 0
+
+Ø´X1 «clk´b rst´b current1´i current2´i
++     mag1_setpoint´i mag2_setpoint´i modulation´i»
++    «pwm_ch1a´b pwm_ch1b´b pwm_ch1c´b pwm_ch1d´b
++     pwm_ch2a´b pwm_ch2b´b pwm_ch2c´b pwm_ch2d´b
++     mag1´i phase1´i mag2´i phase2´i»
++    «0»
++    sim
++    VLSB={1.0/(POW(2,FP_NBITS-1)-1)}
+*+    MAXTIMESTEP={0.1/FCLK}
+
+B1 mix 0 V =(v(current1)+v(current2))/2
+B2 modscaled 0 V=v(modulation)*AMPLITUDE1
+
+B3 pwm1 0 V=v(pwm_ch1a)-v(pwm_ch1c)
+B4 pwm2 0 V=v(pwm_ch2a)-v(pwm_ch2c)
+
+.save v(mix) v(modscaled)
+.save v(current1) v(mag1_setpoint)
+.save v(current2) v(mag2_setpoint)
+.save v(pwm1) v(pwm2)
+
+.plot v(modscaled) v(mix)
+.plot v(current1) v(mag1_setpoint) v(pwm1)
+.plot v(current2) v(mag2_setpoint) v(pwm2)
+
+.options abstol=10n reltol=0.01 cshunt=1e-15 gmin=1e-10
+*.tran {TMAX}
+.tran 0 {TMAX} 0 {1.0/FCLK}

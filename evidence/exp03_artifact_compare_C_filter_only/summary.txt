@@ -1,0 +1,10 @@
+approach=C_filter_only_hpf
+n_pulses=30
+channel=FC1
+recovery_latency_ms=80.000000
+latency_rating=acceptable
+raw_plv=0.994530
+final_plv=0.996829
+raw_coherence_8_12=1.000000
+final_coherence_8_12=1.000000
+ground_truth_recovered=False

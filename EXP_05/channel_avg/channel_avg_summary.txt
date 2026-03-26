@@ -1,0 +1,11 @@
+exp05 all-channel epoch average
+100_blocks=100
+100_on_median_s=1.926
+100_off_median_s=3.074
+30_blocks=63
+30_on_median_s=1.925
+30_off_median_s=3.075
+baseline_events=63
+baseline_epochs=62
+30_epochs=63
+100_epochs=100

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+#SBATCH --job-name=tacsy  # Descriptive job name
+#SBATCH --partition=all_cpu.p  # Use the rosa partition
+#SBATCH --nodes=1  # Use a single node for the simulation
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8             # Number of CPUs per task
+#SBATCH --mem=256G
+#SBATCH --time=70:00:00  # Set a time limit
+#SBATCH --output=slurm.%j.out  # Output file
+#SBATCH --error=slurm.%j.err  # Error file
+#SBATCH --mail-type=ALL  # Notifications for job done and fail
+#SBATCH --mail-user=ntsanyem.njeukwa.bounkeu2@uol.de  # Email for notifications
+
+# Load the modules we need:
+module purge
+module load hpc-env/13.1
+module load SimNIBS/4.1
+module load MATLAB/2023a
+
+cd /fs/dss/home/nodi2384/SUBS_OPTITACS/code/
+# set the SIMNIBSPYTHON environment variable
+#export SIMNIBSPYTHON=/cm/shared/uniol/sw/zen4/13.1/SimNIBS/4.1.0-foss-2023a/bin/python3
+
+# Check if "test" argument is passed
+if [ "$1" == "test" ]; then
+    echo "Running test mode: Only executing test_run_simnibs_simulation"
+    LD_PRELOAD="$EBROOTGCCCORE/lib64/libstdc++.so.6" matlab -nodisplay -nosplash -r "system('echo ""'); test_simnibs.m; system('echo ""'); exit;"
+else
+    echo "Running full pipeline..."
+    LD_PRELOAD="$EBROOTGCCCORE/lib64/libstdc++.so.6" matlab -nodisplay -nosplash -r "system('echo ""'); run('/fs/dss/home/nodi2384/SUBS_OPTITACS/code/main_simnibs.m'); system('echo ""'); exit;"
+fi
+
+
+# Directly run the Python script after MATLAB without checking its completion
+#LD_PRELOAD="$EBROOTGCCCORE/lib64/libstdc++.so.6" python3 /fs/dss/home/nodi2384/SUBS_OPTITACS/code/run_python_efield_analysis.py "patient1" 187 "/fs/dss/home/nodi2384/SUBS_OPTITACS/MRI_data/"
+
+echo "Pipeline steps completed. Check the outputs for validation."
+# Check if the main script was successful
+if [ $? -eq 0 ]; then
+    echo "All steps completed successfully."
+else
+    echo "Error occurred during the simulation. Aborting."
+    exit 1
+fi

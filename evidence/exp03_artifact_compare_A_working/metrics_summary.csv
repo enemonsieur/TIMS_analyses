@@ -1,0 +1,5 @@
+stage,plv,coherence_8_12,recovery_latency_ms,eval_window_start_s,eval_window_end_s,latency_rating
+01  Raw epoch (-2 to +1 s),0.8393943419104277,1.0,0.0,0.0,0.3,ideal
+02  Dual-center + blockzero,0.8959727622591582,1.0,0.0,0.0,0.3,ideal
+03  Crop post-pulse (0.08-1.0 s),0.9945301018414697,1.0,0.0,0.08,0.3,ideal
+04  HPF 0.5 Hz on cropped,0.9981230670984517,1.0,0.0,0.08,0.3,ideal

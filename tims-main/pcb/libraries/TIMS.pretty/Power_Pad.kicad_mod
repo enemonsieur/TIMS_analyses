@@ -1,0 +1,77 @@
+(footprint "Power_Pad"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at -2.5 -6 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "f0d8bc5b-a709-4586-b621-212e5e179d10")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "Power_Pad"
+		(at 0 1 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "d40b3cdf-3598-461b-a3b6-94b86165c1a6")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "79db9345-32c3-4f77-b3eb-361732c2355c")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "d2e7160f-38af-458d-a446-6827ea77f0f0")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(fp_text user "${REFERENCE}"
+		(at -0.5 6.5 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "d9a3199c-70c1-42b9-a2f9-9d2c99a600d9")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" thru_hole circle
+		(at 0 0)
+		(size 16 16)
+		(drill 8.1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "cfff3dd2-e7b8-4e27-be44-49a9d0e14863")
+	)
+	(embedded_fonts no)
+)

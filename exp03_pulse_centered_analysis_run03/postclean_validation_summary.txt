@@ -1,0 +1,24 @@
+Post-clean denoising + validation report
+stim_vhdr_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp03-phantom-stim-pulse-10hz-GT10s-run03.vhdr
+cleaned_epochs_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\exp03_pulse_centered_analysis_run03\stim_epochs_presync_cut_demean_maincut-epo.fif
+reference_channel=Fp1
+sfreq=1000.0
+epoch_window_s=(-2.0, 1.0)
+baseline_window_s=(-0.7, -0.1)
+validation_window_s=(0.03, 1.0)
+metric_band_hz=(8.0, 12.0)
+high_pass_hz=1.0
+ica_n_components=0.99
+ica_method=fastica
+ica_random_state=42
+ica_auto_exclude_top_n=2
+ssp_n_eeg=2
+sound_note=SOUND unavailable in environment: No module named 'sound'
+saved_metrics_csv=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\exp03_pulse_centered_analysis_run03\postclean_validation_metrics.csv
+saved_timecourse_plot=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\exp03_pulse_centered_analysis_run03\postclean_validation_timecourse.png
+saved_coh_plv_plot=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\exp03_pulse_centered_analysis_run03\postclean_validation_coh_plv.png
+results=
+  clean_only: status=ok, coh=0.9802349588965606, plv=0.1069959904446451, corr=0.07190163499385734, notes=HPF (IIR Butterworth order 4) applied at 1.000 Hz before denoising.
+  ica_auto: status=ok, coh=0.9824345156854191, plv=0.10695555493871485, corr=0.07304942419102768, notes=HPF (IIR Butterworth order 4) applied at 1.000 Hz before denoising. ICA auto-excluded components=[1, 2] (top 2 by pulse/baseline source score).
+  ssp: status=ok, coh=0.2749098558339695, plv=0.09502163844189668, corr=-0.001507163942766641, notes=HPF (IIR Butterworth order 4) applied at 1.000 Hz before denoising. SSP projectors applied: n_eeg=2
+  sound: status=skipped, coh=nan, plv=nan, corr=nan, notes=SOUND unavailable in environment: No module named 'sound'

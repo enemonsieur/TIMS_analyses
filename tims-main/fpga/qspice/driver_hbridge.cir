@@ -1,0 +1,44 @@
+* An H-Bridge to be driven with phase-shift PWM
+
+
+.include models/OptiMOS6_200V_Spice.lib
+
+.subckt switch_mosfet pos control neg
++                     params: Vg=12 Rg=5
+	E1 gate_res neg control 0 {Vg}
+	R1 gate_res gate {Rg}
+	X´M1 pos gate neg IPF067N20NM6_L0
+.ends
+
+.subckt switch_ideal pos control neg
++                     params: Ron=6.7m Roff=10Meg
+	S1 pos neg control 0 RON={Ron} ROFF={Roff} VT=0.5 VH=0.1
+	D1 neg pos dmodel
+	.model dmodel D RON=1m
+.ends
+
+.subckt switch_model pos control neg
+	X1 pos control neg switch_ideal
+.ends
+
+.subckt driver_hbridge
++                    pwm_a pwm_b pwm_c pwm_d
++                    out_pos out_neg pwm_eq
++                    vcc
+
+	Lf vcc vhs 110µ RSER=6.18m
+	Lcfp vhs cf 20n
+	Cf cf 0 100µ RSER=0.5m
+	Cd vhs 0 1000u RSER=1
+	
+	Xa vhs pwm_a out_pos switch_model
+	Xb out_pos pwm_b 0 switch_model	
+
+	Xc vhs pwm_c out_neg switch_model
+	Xd out_neg pwm_d 0 switch_model	
+		
+	Rsh1 0 out_pos 1Meg
+	Rsh2 0 out_neg 1Meg
+
+	B1 pwm_eq 0 V = V(pwm_a) - V(pwm_c)
+.ends

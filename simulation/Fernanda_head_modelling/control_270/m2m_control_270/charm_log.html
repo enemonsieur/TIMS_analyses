@@ -1,0 +1,659 @@
+<HTML><HEAD><TITLE>charm report</TITLE></HEAD><BODY><pre>INFO: simnibs version 4.5.0
+INFO: charm run started: Thu Feb 12 09:35:50 2026
+DEBUG: options: control_270 C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\Fernanda_head_modelling\control_270\control_270_T1w.nii.gz --forceqform --forcerun
+INFO: Reading settings from C:\Users\njeuk\SimNIBS-4.5\simnibs_env\Lib\site-packages\simnibs\charm.ini
+DEBUG: {'general': {'threads': 8}, 'preprocess': {'denoise': False}, 'samseg': {'atlas_name': 'charm_atlas_mni', 'gmm_parameter_file': '', 'init_type': 'atlas'}, 'initmni': {'translation_scale': -100, 'max_iter': 300, 'shrink_factors': [2, 1, 0], 'bg_value': 0, 'smoothing_factors': [4.0, 2.0, 0.0], 'center_of_mass': True, 'samp_factor': 1.0, 'num_histogram_bins': 64}, 'initatlas': {'affine_scales': [[0.85, 0.85, 0.85], [0.9, 0.9, 0.85], [0.95, 0.95, 0.85]], 'affine_rotations': [-7, -3.5, 0, 3.5, 7], 'affine_horizontal_shifts': [-20.0, -10.0, 0, 10.0, 20.0], 'affine_vertical_shifts': [-10.0, 0.0, 10.0], 'neck_search_bounds': [-0.3, 0.1], 'downsampling_factor_affine': 2}, 'segment': {'downsampling_targets': [2.0, 1.0], 'bias_kernel_width': 70, 'background_mask_sigma': 4.0, 'background_mask_threshold': 0.001, 'mesh_stiffness': 0.1, 'diagonal_covariances': False, 'csf_factor': 0.3}, 'surfaces': {'processes': 2, 'surf': ['lh', 'rh'], 'pial': ['lh', 'rh'], 'vdist': [1.0, 0.75], 'voxsize_pbt': [0.5, 0.25], 'voxsize_refinecs': [0.75, 0.5], 'th_initial': 0.714, 'no_selfintersections': True, 'fillin_gm_from_surf': True, 'open_sulci_from_surf': True, 'exclusion_tissues_fillin_gm': {'left_cerebral_wm': 2, 'right_cerebral_wm': 41, 'stuff_to_exclude': [4, 10, 14, 16, 24, 28, 43, 49, 60]}, 'exclusion_tissues_open_csf': [17, 18, 53, 54], 'brain_mask_tissues': ['WM', 'GM', 'CSF'], 'update_segmentation_from_surfaces': True, 'protect': {'gm_to_csf': [17, 18, 53, 54, 8, 47, 7, 46, 85, 530], 'wm_to_gm': [7, 46, 16, 512, 85, 530, 28, 60], 'gm_to_wm': [8, 10, 11, 12, 17, 18, 26, 47, 49, 50, 51, 53, 54, 58], 'csf_to_gm': [4, 5, 31, 43, 44, 63]}}, 'mesh': {'elem_sizes': {'standard': {'range': [1, 5], 'slope': 1.0}, '1': {'range': [1, 7], 'slope': 1.0}, '2': {'range': [1, 2], 'slope': 1.0}, '5': {'range': [1, 10], 'slope': 0.6}}, 'smooth_size_field': 2, 'skin_facet_size': 2.0, 'facet_distances': {'standard': {'range': [0.1, 3], 'slope': 0.5}}, 'optimize': False, 'apply_cream': True, 'remove_spikes': True, 'skin_tag': 1005, 'hierarchy': False, 'smooth_steps': 10, 'skin_care': 20, 'mmg_noinsert': False}}
+INFO: Using 8 threads, instead of all available.
+INFO: Using charm_atlas_mni as charm atlas.
+INFO: Reading settings from C:\Users\njeuk\SimNIBS-4.5\simnibs_env\Lib\site-packages\simnibs\segmentation\atlases\charm_atlas_mni\charm_atlas_mni.ini
+INFO: Starting affine registration and neck correction.
+INFO: Template registration summary.
+INFO: Number of Iterations: 2, Cost: -0.773253
+
+INFO: Adjusting neck.
+INFO: Initial cost: -0.064526781012923
+INFO: Neck adjustment done.
+INFO: Estimating parameters.
+INFO: Starting segmentation.
+INFO: ##----------------------------------------------
+INFO:               Samsegment Options
+INFO: ##----------------------------------------------
+INFO: output directory:C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\Fernanda_head_modelling\control_270\m2m_control_270\segmentation
+INFO: input images: ['C:\\Users\\njeuk\\OneDrive\\Documents\\Charite Berlin\\TIMS\\Fernanda_head_modelling\\control_270\\m2m_control_270\\T1.nii.gz']
+INFO: transformed template:C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\Fernanda_head_modelling\control_270\m2m_control_270\segmentation\template_coregistered.mgz
+INFO: modelSpecifications:{'FreeSurferLabels': [517, 8, 16, 15, 46, 3, 7, 42, 2, 41, 24, 44, 54, 53, 18, 5, 17, 60, 31, 85, 28, 63, 14, 12, 51, 62, 26, 58, 30, 52, 43, 49, 10, 11, 50, 4, 13, 77, 72, 80, 29, 47, 511, 507, 501, 502, 515, 514, 512, 516, 509, 508, 506, 520, 530], 'atlasFileName': 'C:\\Users\\njeuk\\OneDrive\\Documents\\Charite Berlin\\TIMS\\Fernanda_head_modelling\\control_270\\m2m_control_270\\segmentation\\atlas_level2.txt.gz', 'names': ['Background', 'Left-Cerebellum-Cortex', 'Brain-Stem', '4th-Ventricle', 'Right-Cerebellum-White-Matter', 'Left-Cerebral-Cortex', 'Left-Cerebellum-White-Matter', 'Right-Cerebral-Cortex', 'Left-Cerebral-White-Matter', 'Right-Cerebral-White-Matter', 'Sub-CSF', 'Right-Inf-Lat-Vent', 'Right-Amygdala', 'Right-Hippocampus', 'Left-Amygdala', 'Left-Inf-Lat-Vent', 'Left-Hippocampus', 'Right-VentralDC', 'Left-choroid-plexus', 'Optic-Chiasm', 'Left-VentralDC', 'Right-choroid-plexus', '3rd-Ventricle', 'Left-Putamen', 'Right-Putamen', 'Right-vessel', 'Left-Accumbens-area', 'Right-Accumbens-area', 'Left-vessel', 'Right-Pallidum', 'Right-Lateral-Ventricle', 'Right-Thalamus-Proper', 'Left-Thalamus-Proper', 'Left-Caudate', 'Right-Caudate', 'Left-Lateral-Ventricle', 'Left-Pallidum', 'WM-hypointensities', '5th-Ventricle', 'non-WM-hypointensities', 'Left-undetermined', 'Right-Cerebellum-Cortex', 'Skin', 'Other-Tissues', 'Air-Internal', 'Artery', 'Bone-Cortical', 'Vein', 'Spinal-Cord', 'Bone-Cancellous', 'Mucosa', 'Rectus-Muscles', 'Eyes', 'CorticalCSF', 'Optic-Nerve'], 'colors': [[0, 168, 255, 255], [230, 148, 34, 255], [119, 159, 176, 255], [42, 204, 164, 255], [220, 248, 164, 255], [205, 62, 78, 255], [220, 248, 164, 255], [205, 62, 78, 255], [245, 245, 245, 255], [0, 225, 0, 255], [60, 60, 60, 255], [196, 58, 250, 255], [103, 255, 255, 255], [220, 216, 20, 255], [103, 255, 255, 255], [196, 58, 250, 255], [220, 216, 20, 255], [165, 42, 42, 255], [0, 200, 200, 255], [234, 169, 30, 255], [165, 42, 42, 255], [0, 200, 221, 255], [204, 182, 142, 255], [236, 13, 176, 255], [236, 13, 176, 255], [160, 32, 240, 255], [255, 165, 0, 255], [255, 165, 0, 255], [160, 32, 240, 255], [13, 48, 255, 255], [120, 18, 134, 255], [0, 118, 14, 255], [0, 118, 14, 255], [122, 186, 220, 255], [122, 186, 220, 255], [120, 18, 134, 255], [12, 48, 255, 255], [200, 70, 255, 255], [120, 190, 150, 255], [164, 108, 226, 255], [135, 206, 235, 255], [230, 148, 34, 255], [190, 156, 120, 255], [250, 250, 51, 255], [0, 0, 0, 0], [204, 0, 0, 255], [238, 215, 150, 255], [0, 84, 255, 255], [0, 187, 169, 255], [237, 199, 154, 255], [255, 160, 188, 255], [190, 50, 73, 255], [230, 189, 66, 255], [120, 133, 217, 255], [0, 191, 122, 255]], 'sharedGMMParameters': [GMMparameter(mergedName='Air_Background', numberOfComponents=1, searchStrings=['Background', 'Air-Internal', 'CorticalCSF', 'Bone-Cortical']), GMMparameter(mergedName='Global_WM', numberOfComponents=2, searchStrings=['White', 'Brain-Stem', 'VentralDC', 'Optic-Chiasm', 'Thalamus', 'Optic-Nerve']), GMMparameter(mergedName='Global_GM', numberOfComponents=1, searchStrings=['Cortex', 'Caudate', 'Hippocampus', 'Amygdala', 'Accumbens', 'hypointensities', 'Thalamus']), GMMparameter(mergedName='Global_CSF_messy', numberOfComponents=1, searchStrings=['Sub-CSF', 'vessel', 'choroid-plexus']), GMMparameter(mergedName='Global_CSF_clean', numberOfComponents=1, searchStrings=['Ventricle', 'Inf-Lat-Vent', 'Eyes']), GMMparameter(mergedName='Veins', numberOfComponents=1, searchStrings=['Vein']), GMMparameter(mergedName='Soft_Tissues', numberOfComponents=2, searchStrings=['Other-Tissues', 'Rectus-Muscles', 'Mucosa', 'Skin', 'Artery', 'undetermined', 'Optic-Nerve', 'Bone-Cancellous']), GMMparameter(mergedName='Pallidum', numberOfComponents=1, searchStrings=['Pallidum']), GMMparameter(mergedName='Putamen', numberOfComponents=1, searchStrings=['Putamen']), GMMparameter(mergedName='Spine', numberOfComponents=1, searchStrings=['Spinal-Cord'])], 'useDiagonalCovarianceMatrices': False, 'brainMaskingSmoothingSigma': 4.0, 'brainMaskingThreshold': 0.001, 'K': 0.1, 'biasFieldSmoothingKernelSize': 70}
+INFO: optimizationOptions:{'maximumNumberOfDeformationIterations': 20, 'absoluteCostPerVoxelDecreaseStopCriterion': 0.0001, 'verbose': False, 'maximalDeformationStopCriterion': 0.001, 'lineSearchMaximalDeformationIntervalStopCriterion': 0.001, 'maximalDeformationAppliedStopCriterion': 0.0, 'BFGSMaximumMemoryLength': 12, 'multiResolutionSpecification': [{'atlasFileName': 'C:\\Users\\njeuk\\OneDrive\\Documents\\Charite Berlin\\TIMS\\Fernanda_head_modelling\\control_270\\m2m_control_270\\segmentation\\atlas_level1.txt.gz', 'targetDownsampledVoxelSpacing': 2.0, 'maximumNumberOfIterations': 100, 'estimateBiasField': True}, {'atlasFileName': 'C:\\Users\\njeuk\\OneDrive\\Documents\\Charite Berlin\\TIMS\\Fernanda_head_modelling\\control_270\\m2m_control_270\\segmentation\\atlas_level2.txt.gz', 'targetDownsampledVoxelSpacing': 1.0, 'maximumNumberOfIterations': 100, 'estimateBiasField': True}]}
+INFO: ====================
+INFO: {
+    depth: 1
+    maximumNumberOfDeformationIterations: 20
+    absoluteCostPerVoxelDecreaseStopCriterion: 0.0001
+    verbose: False
+    maximalDeformationStopCriterion: 0.001
+    lineSearchMaximalDeformationIntervalStopCriterion: 0.001
+    maximalDeformationAppliedStopCriterion: 0.0
+    BFGSMaximumMemoryLength: 12
+    multiResolutionSpecification: {
+        depth: 2
+        atlasFileName: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\Fernanda_head_modelling\control_270\m2m_control_270\segmentation\atlas_level1.txt.gz
+        targetDownsampledVoxelSpacing: 2.0
+        maximumNumberOfIterations: 100
+        estimateBiasField: True
+    }, {
+        depth: 2
+        atlasFileName: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\Fernanda_head_modelling\control_270\m2m_control_270\segmentation\atlas_level2.txt.gz
+        targetDownsampledVoxelSpacing: 1.0
+        maximumNumberOfIterations: 100
+        estimateBiasField: True
+    }
+}
+INFO: ====================
+INFO: multiResolutionLevel=0
+INFO: maximumNumberOfIterations: 100
+INFO: Setting up downsampled model
+INFO: iterationNumber=0
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EMIterationNumber=3
+INFO: EMIterationNumber=4
+INFO: EMIterationNumber=5
+INFO: EMIterationNumber=6
+INFO: EMIterationNumber=7
+INFO: EMIterationNumber=8
+INFO: EMIterationNumber=9
+INFO: EMIterationNumber=10
+INFO: EMIterationNumber=11
+INFO: EMIterationNumber=12
+INFO: EMIterationNumber=13
+INFO: EM converged!
+INFO: maximalDeformation=0.5000 minLogLikelihood=718918.4427
+INFO: maximalDeformation=0.4743 minLogLikelihood=716318.1881
+INFO: maximalDeformation=0.2671 minLogLikelihood=714172.5632
+INFO: maximalDeformation=0.2270 minLogLikelihood=712534.1389
+INFO: maximalDeformation=0.2568 minLogLikelihood=710913.0840
+INFO: maximalDeformation=0.2182 minLogLikelihood=709896.4354
+INFO: maximalDeformation=0.0695 minLogLikelihood=709639.4899
+INFO: maximalDeformation=0.0649 minLogLikelihood=709518.2499
+INFO: maximalDeformation=0.3963 minLogLikelihood=708804.6115
+INFO: maximalDeformation=0.1856 minLogLikelihood=708582.2045
+INFO: maximalDeformation=0.2053 minLogLikelihood=708065.9340
+INFO: maximalDeformation=0.2124 minLogLikelihood=707983.7892
+INFO: maximalDeformation=0.0626 minLogLikelihood=707758.0807
+INFO: maximalDeformation=0.0351 minLogLikelihood=707684.0967
+INFO: maximalDeformation=0.1439 minLogLikelihood=707346.7084
+INFO: maximalDeformation=0.2212 minLogLikelihood=707013.1147
+INFO: maximalDeformation=0.0752 minLogLikelihood=706934.5369
+INFO: maximalDeformation=0.2605 minLogLikelihood=706688.8616
+INFO: maximalDeformation=0.2745 minLogLikelihood=705984.5399
+INFO: maximalDeformation=0.1894 minLogLikelihood=705514.8576
+INFO: maximalDeformation=0.0000 minLogLikelihood=705514.8576
+INFO: iterationNumber: 0
+INFO: maximalDeformationApplied: 2.1582
+INFO: =======================================================
+INFO: iterationNumber=1
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EMIterationNumber=3
+INFO: EMIterationNumber=4
+INFO: EMIterationNumber=5
+INFO: EMIterationNumber=6
+INFO: EMIterationNumber=7
+INFO: EMIterationNumber=8
+INFO: EMIterationNumber=9
+INFO: EMIterationNumber=10
+INFO: EMIterationNumber=11
+INFO: EMIterationNumber=12
+INFO: EMIterationNumber=13
+INFO: EMIterationNumber=14
+INFO: EMIterationNumber=15
+INFO: EMIterationNumber=16
+INFO: EMIterationNumber=17
+INFO: EM converged!
+INFO: maximalDeformation=0.5000 minLogLikelihood=585870.8638
+INFO: maximalDeformation=0.1904 minLogLikelihood=584781.1598
+INFO: maximalDeformation=0.2267 minLogLikelihood=583410.2581
+INFO: maximalDeformation=0.0812 minLogLikelihood=582880.4012
+INFO: maximalDeformation=0.0527 minLogLikelihood=582658.1677
+INFO: maximalDeformation=0.0918 minLogLikelihood=582214.4197
+INFO: maximalDeformation=0.0954 minLogLikelihood=581782.8561
+INFO: maximalDeformation=0.0134 minLogLikelihood=581729.2748
+INFO: maximalDeformation=0.0705 minLogLikelihood=581636.5648
+INFO: maximalDeformation=0.0488 minLogLikelihood=581580.4311
+INFO: maximalDeformation=0.0292 minLogLikelihood=581536.4489
+INFO: maximalDeformation=0.0783 minLogLikelihood=581276.2416
+INFO: maximalDeformation=0.0316 minLogLikelihood=581191.8243
+INFO: maximalDeformation=0.0073 minLogLikelihood=581180.9722
+INFO: maximalDeformation=0.0181 minLogLikelihood=581109.2391
+INFO: maximalDeformation=0.1127 minLogLikelihood=580758.7303
+INFO: maximalDeformation=0.0418 minLogLikelihood=580677.0677
+INFO: maximalDeformation=0.0491 minLogLikelihood=580515.0694
+INFO: maximalDeformation=0.0679 minLogLikelihood=580138.4252
+INFO: maximalDeformation=0.0588 minLogLikelihood=579951.2053
+INFO: maximalDeformation=0.0000 minLogLikelihood=579951.2053
+INFO: iterationNumber: 1
+INFO: maximalDeformationApplied: 1.0045
+INFO: =======================================================
+INFO: iterationNumber=2
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EM converged!
+INFO: maximalDeformation=0.2500 minLogLikelihood=579686.7069
+INFO: maximalDeformation=0.0079 minLogLikelihood=579653.1647
+INFO: maximalDeformation=0.0955 minLogLikelihood=579349.1716
+INFO: maximalDeformation=0.2311 minLogLikelihood=578720.5115
+INFO: maximalDeformation=0.4654 minLogLikelihood=576770.2562
+INFO: maximalDeformation=0.1670 minLogLikelihood=576167.3090
+INFO: maximalDeformation=0.1338 minLogLikelihood=575496.7793
+INFO: maximalDeformation=0.0515 minLogLikelihood=575273.6122
+INFO: maximalDeformation=0.0682 minLogLikelihood=574839.2756
+INFO: maximalDeformation=0.0347 minLogLikelihood=574641.4986
+INFO: maximalDeformation=0.0511 minLogLikelihood=574249.4648
+INFO: maximalDeformation=0.0436 minLogLikelihood=574139.2815
+INFO: maximalDeformation=0.1904 minLogLikelihood=573534.9152
+INFO: maximalDeformation=0.0613 minLogLikelihood=573239.1892
+INFO: maximalDeformation=0.0503 minLogLikelihood=573138.0172
+INFO: maximalDeformation=0.0630 minLogLikelihood=572872.7129
+INFO: maximalDeformation=0.0752 minLogLikelihood=572687.0640
+INFO: maximalDeformation=0.0918 minLogLikelihood=572296.5219
+INFO: maximalDeformation=0.2402 minLogLikelihood=571517.1314
+INFO: maximalDeformation=0.0790 minLogLikelihood=571326.7314
+INFO: maximalDeformation=0.0000 minLogLikelihood=571326.7314
+INFO: iterationNumber: 2
+INFO: maximalDeformationApplied: 0.9712
+INFO: =======================================================
+INFO: iterationNumber=3
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EMIterationNumber=3
+INFO: EMIterationNumber=4
+INFO: EM converged!
+INFO: maximalDeformation=0.5000 minLogLikelihood=570318.5125
+INFO: maximalDeformation=0.0609 minLogLikelihood=570114.8051
+INFO: maximalDeformation=0.5253 minLogLikelihood=568371.5874
+INFO: maximalDeformation=0.0328 minLogLikelihood=568248.5204
+INFO: maximalDeformation=0.0615 minLogLikelihood=567967.4431
+INFO: maximalDeformation=0.0770 minLogLikelihood=567543.2827
+INFO: maximalDeformation=0.0458 minLogLikelihood=567329.6157
+INFO: maximalDeformation=0.1440 minLogLikelihood=566929.4452
+INFO: maximalDeformation=0.0587 minLogLikelihood=566777.8472
+INFO: maximalDeformation=0.0412 minLogLikelihood=566682.6797
+INFO: maximalDeformation=0.0246 minLogLikelihood=566592.9255
+INFO: maximalDeformation=0.0443 minLogLikelihood=566473.2335
+INFO: maximalDeformation=0.0313 minLogLikelihood=566384.5455
+INFO: maximalDeformation=0.0195 minLogLikelihood=566318.2196
+INFO: maximalDeformation=0.0221 minLogLikelihood=566225.6467
+INFO: maximalDeformation=0.0577 minLogLikelihood=566115.8618
+INFO: maximalDeformation=0.0518 minLogLikelihood=565912.6624
+INFO: maximalDeformation=0.0501 minLogLikelihood=565740.9157
+INFO: maximalDeformation=0.0579 minLogLikelihood=565525.9841
+INFO: maximalDeformation=0.0749 minLogLikelihood=565189.5868
+INFO: maximalDeformation=0.0000 minLogLikelihood=565189.5868
+INFO: iterationNumber: 3
+INFO: maximalDeformationApplied: 1.0810
+INFO: =======================================================
+INFO: iterationNumber=4
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EMIterationNumber=3
+INFO: EM converged!
+INFO: maximalDeformation=0.5000 minLogLikelihood=564690.3137
+INFO: maximalDeformation=0.0551 minLogLikelihood=564607.9880
+INFO: maximalDeformation=0.0868 minLogLikelihood=564377.6018
+INFO: maximalDeformation=0.1892 minLogLikelihood=563782.1172
+INFO: maximalDeformation=0.2077 minLogLikelihood=563184.6979
+INFO: maximalDeformation=0.1070 minLogLikelihood=562891.4380
+INFO: maximalDeformation=0.2632 minLogLikelihood=562097.5163
+INFO: maximalDeformation=0.0918 minLogLikelihood=561895.3023
+INFO: maximalDeformation=0.1524 minLogLikelihood=561524.4831
+INFO: maximalDeformation=0.1093 minLogLikelihood=561168.3271
+INFO: maximalDeformation=0.0360 minLogLikelihood=561088.2249
+INFO: maximalDeformation=0.0478 minLogLikelihood=560938.2488
+INFO: maximalDeformation=0.0506 minLogLikelihood=560831.2175
+INFO: maximalDeformation=0.0890 minLogLikelihood=560615.6180
+INFO: maximalDeformation=0.0632 minLogLikelihood=560439.7675
+INFO: maximalDeformation=0.0110 minLogLikelihood=560433.9584
+INFO: maximalDeformation=0.0263 minLogLikelihood=560368.6339
+INFO: maximalDeformation=0.1047 minLogLikelihood=560190.5059
+INFO: maximalDeformation=0.0627 minLogLikelihood=560153.2405
+INFO: maximalDeformation=0.0209 minLogLikelihood=560075.6098
+INFO: maximalDeformation=0.0000 minLogLikelihood=560075.6098
+INFO: iterationNumber: 4
+INFO: maximalDeformationApplied: 1.0757
+INFO: =======================================================
+INFO: iterationNumber=5
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EMIterationNumber=3
+INFO: EM converged!
+INFO: maximalDeformation=0.2500 minLogLikelihood=559650.6110
+INFO: maximalDeformation=0.0909 minLogLikelihood=559441.3740
+INFO: maximalDeformation=0.8732 minLogLikelihood=557809.8458
+INFO: maximalDeformation=0.3604 minLogLikelihood=557507.4797
+INFO: maximalDeformation=0.0228 minLogLikelihood=557461.9358
+INFO: maximalDeformation=0.0333 minLogLikelihood=557354.7044
+INFO: maximalDeformation=0.0187 minLogLikelihood=557308.5207
+INFO: maximalDeformation=0.1773 minLogLikelihood=556887.5601
+INFO: maximalDeformation=0.0927 minLogLikelihood=556745.3496
+INFO: maximalDeformation=0.0124 minLogLikelihood=556706.8354
+INFO: maximalDeformation=0.0641 minLogLikelihood=556538.2206
+INFO: maximalDeformation=0.0284 minLogLikelihood=556449.1428
+INFO: maximalDeformation=0.0631 minLogLikelihood=556195.1982
+INFO: maximalDeformation=0.0774 minLogLikelihood=555938.5452
+INFO: maximalDeformation=0.0674 minLogLikelihood=555798.6759
+INFO: maximalDeformation=0.0603 minLogLikelihood=555718.5454
+INFO: maximalDeformation=0.0565 minLogLikelihood=555634.3054
+INFO: maximalDeformation=0.0601 minLogLikelihood=555518.4773
+INFO: maximalDeformation=0.0415 minLogLikelihood=555390.1694
+INFO: maximalDeformation=0.0456 minLogLikelihood=555316.7287
+INFO: maximalDeformation=0.0000 minLogLikelihood=555316.7287
+INFO: iterationNumber: 5
+INFO: maximalDeformationApplied: 0.8351
+INFO: =======================================================
+INFO: iterationNumber=6
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EM converged!
+INFO: maximalDeformation=0.2500 minLogLikelihood=555043.8049
+INFO: maximalDeformation=0.1257 minLogLikelihood=554990.4592
+INFO: maximalDeformation=0.0048 minLogLikelihood=554980.1242
+INFO: maximalDeformation=0.0401 minLogLikelihood=554840.8788
+INFO: maximalDeformation=0.3349 minLogLikelihood=553785.7752
+INFO: maximalDeformation=0.2246 minLogLikelihood=553124.8703
+INFO: maximalDeformation=0.3493 minLogLikelihood=552293.8514
+INFO: maximalDeformation=0.1200 minLogLikelihood=552081.7821
+INFO: maximalDeformation=0.0979 minLogLikelihood=551855.4290
+INFO: maximalDeformation=0.0223 minLogLikelihood=551786.8088
+INFO: maximalDeformation=0.1137 minLogLikelihood=551314.9029
+INFO: maximalDeformation=0.0668 minLogLikelihood=551122.0302
+INFO: maximalDeformation=0.0560 minLogLikelihood=551003.2972
+INFO: maximalDeformation=0.0692 minLogLikelihood=550828.5529
+INFO: maximalDeformation=0.0741 minLogLikelihood=550711.7994
+INFO: maximalDeformation=0.0321 minLogLikelihood=550619.9841
+INFO: maximalDeformation=0.0182 minLogLikelihood=550610.1905
+INFO: maximalDeformation=0.0260 minLogLikelihood=550563.4932
+INFO: maximalDeformation=0.1545 minLogLikelihood=550404.3720
+INFO: maximalDeformation=0.0333 minLogLikelihood=550344.9505
+INFO: maximalDeformation=0.0000 minLogLikelihood=550344.9505
+INFO: iterationNumber: 6
+INFO: maximalDeformationApplied: 1.2909
+INFO: =======================================================
+INFO: iterationNumber=7
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EMIterationNumber=3
+INFO: EM converged!
+INFO: maximalDeformation=0.2500 minLogLikelihood=549807.0786
+INFO: maximalDeformation=0.0921 minLogLikelihood=549695.8831
+INFO: maximalDeformation=0.0535 minLogLikelihood=549586.8765
+INFO: maximalDeformation=0.4908 minLogLikelihood=548768.6515
+INFO: maximalDeformation=0.5450 minLogLikelihood=548007.7223
+INFO: maximalDeformation=0.1778 minLogLikelihood=547780.1836
+INFO: maximalDeformation=0.0637 minLogLikelihood=547699.5370
+INFO: maximalDeformation=0.3095 minLogLikelihood=547225.5933
+INFO: maximalDeformation=0.0735 minLogLikelihood=547108.5915
+INFO: maximalDeformation=0.0872 minLogLikelihood=546961.9690
+INFO: maximalDeformation=0.0620 minLogLikelihood=546899.8143
+INFO: maximalDeformation=0.0388 minLogLikelihood=546845.1609
+INFO: maximalDeformation=0.0408 minLogLikelihood=546745.6443
+INFO: maximalDeformation=0.0758 minLogLikelihood=546634.9364
+INFO: maximalDeformation=0.0127 minLogLikelihood=546616.3992
+INFO: maximalDeformation=0.0400 minLogLikelihood=546487.4620
+INFO: maximalDeformation=0.0283 minLogLikelihood=546398.9494
+INFO: maximalDeformation=0.0759 minLogLikelihood=546115.9466
+INFO: maximalDeformation=0.0187 minLogLikelihood=546040.9566
+INFO: maximalDeformation=0.0559 minLogLikelihood=545862.2759
+INFO: maximalDeformation=0.0000 minLogLikelihood=545862.2759
+INFO: iterationNumber: 7
+INFO: maximalDeformationApplied: 1.8595
+INFO: =======================================================
+INFO: iterationNumber=8
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EM converged!
+INFO: maximalDeformation=0.2500 minLogLikelihood=545461.1500
+INFO: maximalDeformation=0.0428 minLogLikelihood=545357.3513
+INFO: maximalDeformation=0.2029 minLogLikelihood=544714.7419
+INFO: maximalDeformation=0.1215 minLogLikelihood=544532.2483
+INFO: maximalDeformation=0.0471 minLogLikelihood=544449.3744
+INFO: maximalDeformation=0.0567 minLogLikelihood=544391.7840
+INFO: maximalDeformation=0.0462 minLogLikelihood=544328.3050
+INFO: maximalDeformation=0.0301 minLogLikelihood=544284.4477
+INFO: maximalDeformation=0.0585 minLogLikelihood=544217.9905
+INFO: maximalDeformation=0.0135 minLogLikelihood=544196.1398
+INFO: maximalDeformation=0.0686 minLogLikelihood=544131.2209
+INFO: maximalDeformation=0.0805 minLogLikelihood=544038.5786
+INFO: maximalDeformation=0.0907 minLogLikelihood=543933.6204
+INFO: maximalDeformation=0.1711 minLogLikelihood=543787.7097
+INFO: maximalDeformation=0.0543 minLogLikelihood=543741.8977
+INFO: maximalDeformation=0.0390 minLogLikelihood=543690.2681
+INFO: maximalDeformation=0.0842 minLogLikelihood=543545.0723
+INFO: maximalDeformation=0.0761 minLogLikelihood=543415.0606
+INFO: maximalDeformation=0.0349 minLogLikelihood=543363.9960
+INFO: maximalDeformation=0.0378 minLogLikelihood=543290.9087
+INFO: maximalDeformation=0.0000 minLogLikelihood=543290.9087
+INFO: iterationNumber: 8
+INFO: maximalDeformationApplied: 1.0285
+INFO: =======================================================
+INFO: iterationNumber=9
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EM converged!
+INFO: maximalDeformation=0.0625 minLogLikelihood=543155.1122
+INFO: maximalDeformation=0.0100 minLogLikelihood=543127.2288
+INFO: maximalDeformation=0.0540 minLogLikelihood=543005.2626
+INFO: maximalDeformation=0.1259 minLogLikelihood=542644.9140
+INFO: maximalDeformation=0.1865 minLogLikelihood=542103.5944
+INFO: maximalDeformation=0.0303 minLogLikelihood=542015.3544
+INFO: maximalDeformation=0.0120 minLogLikelihood=542005.8720
+INFO: maximalDeformation=0.0545 minLogLikelihood=541732.7502
+INFO: maximalDeformation=0.0328 minLogLikelihood=541600.1249
+INFO: maximalDeformation=0.0743 minLogLikelihood=541387.8344
+INFO: maximalDeformation=0.0252 minLogLikelihood=541324.7692
+INFO: maximalDeformation=0.0436 minLogLikelihood=541233.8880
+INFO: maximalDeformation=0.0427 minLogLikelihood=541192.4946
+INFO: maximalDeformation=0.0281 minLogLikelihood=541107.7327
+INFO: maximalDeformation=0.0821 minLogLikelihood=540919.2658
+INFO: maximalDeformation=0.0625 minLogLikelihood=540784.5172
+INFO: maximalDeformation=0.0987 minLogLikelihood=540527.2776
+INFO: maximalDeformation=0.0508 minLogLikelihood=540365.5156
+INFO: maximalDeformation=0.0948 minLogLikelihood=540137.5432
+INFO: maximalDeformation=0.1111 minLogLikelihood=539883.6242
+INFO: maximalDeformation=0.0000 minLogLikelihood=539883.6242
+INFO: iterationNumber: 9
+INFO: maximalDeformationApplied: 0.6498
+INFO: =======================================================
+INFO: iterationNumber=10
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EM converged!
+INFO: maximalDeformation=0.1250 minLogLikelihood=539465.9603
+INFO: maximalDeformation=0.1543 minLogLikelihood=539185.3814
+INFO: maximalDeformation=0.3410 minLogLikelihood=538775.2507
+INFO: maximalDeformation=0.2584 minLogLikelihood=538628.6530
+INFO: maximalDeformation=0.2246 minLogLikelihood=538451.9216
+INFO: maximalDeformation=0.0847 minLogLikelihood=538289.3884
+INFO: maximalDeformation=0.1108 minLogLikelihood=537952.1614
+INFO: maximalDeformation=0.1388 minLogLikelihood=537639.7478
+INFO: maximalDeformation=0.0449 minLogLikelihood=537588.4736
+INFO: maximalDeformation=0.0162 minLogLikelihood=537566.9840
+INFO: maximalDeformation=0.0874 minLogLikelihood=537439.1661
+INFO: maximalDeformation=0.1931 minLogLikelihood=537306.5380
+INFO: maximalDeformation=0.2133 minLogLikelihood=537006.9191
+INFO: maximalDeformation=0.0623 minLogLikelihood=536876.7233
+INFO: maximalDeformation=0.0280 minLogLikelihood=536854.9089
+INFO: maximalDeformation=0.1536 minLogLikelihood=536743.4702
+INFO: maximalDeformation=0.0519 minLogLikelihood=536683.6299
+INFO: maximalDeformation=0.0667 minLogLikelihood=536591.0977
+INFO: maximalDeformation=0.0565 minLogLikelihood=536513.3498
+INFO: maximalDeformation=0.0596 minLogLikelihood=536464.8271
+INFO: maximalDeformation=0.0000 minLogLikelihood=536464.8271
+INFO: iterationNumber: 10
+INFO: maximalDeformationApplied: 0.7340
+INFO: =======================================================
+INFO: iterationNumber=11
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EM converged!
+INFO: maximalDeformation=0.1250 minLogLikelihood=536210.5509
+INFO: maximalDeformation=0.0515 minLogLikelihood=536113.7640
+INFO: maximalDeformation=0.2670 minLogLikelihood=535644.3211
+INFO: maximalDeformation=0.1662 minLogLikelihood=535310.2044
+INFO: maximalDeformation=0.1109 minLogLikelihood=535053.1082
+INFO: maximalDeformation=0.0631 minLogLikelihood=534905.0416
+INFO: maximalDeformation=0.1130 minLogLikelihood=534679.7704
+INFO: maximalDeformation=0.0560 minLogLikelihood=534558.8965
+INFO: maximalDeformation=0.0161 minLogLikelihood=534530.0723
+INFO: maximalDeformation=0.1785 minLogLikelihood=534290.9106
+INFO: maximalDeformation=0.2007 minLogLikelihood=534037.7193
+INFO: maximalDeformation=0.0878 minLogLikelihood=533976.6481
+INFO: maximalDeformation=0.1210 minLogLikelihood=533912.0438
+INFO: maximalDeformation=0.0372 minLogLikelihood=533892.0136
+INFO: maximalDeformation=0.0441 minLogLikelihood=533850.4303
+INFO: maximalDeformation=0.1150 minLogLikelihood=533575.5087
+INFO: maximalDeformation=0.0376 minLogLikelihood=533497.5762
+INFO: maximalDeformation=0.0606 minLogLikelihood=533333.7919
+INFO: maximalDeformation=0.0292 minLogLikelihood=533287.0593
+INFO: maximalDeformation=0.0601 minLogLikelihood=533116.9555
+INFO: maximalDeformation=0.0000 minLogLikelihood=533116.9555
+INFO: iterationNumber: 11
+INFO: maximalDeformationApplied: 0.9989
+INFO: =======================================================
+INFO: iterationNumber=12
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EM converged!
+INFO: maximalDeformation=0.2500 minLogLikelihood=532668.4951
+INFO: maximalDeformation=0.0882 minLogLikelihood=532458.0153
+INFO: maximalDeformation=0.0748 minLogLikelihood=532251.7673
+INFO: maximalDeformation=0.3848 minLogLikelihood=531440.0403
+INFO: maximalDeformation=0.1593 minLogLikelihood=531120.3839
+INFO: maximalDeformation=0.1717 minLogLikelihood=530794.6398
+INFO: maximalDeformation=0.1220 minLogLikelihood=530507.2310
+INFO: maximalDeformation=0.0233 minLogLikelihood=530478.4333
+INFO: maximalDeformation=0.0784 minLogLikelihood=530283.0809
+INFO: maximalDeformation=0.0473 minLogLikelihood=530122.9453
+INFO: maximalDeformation=0.0309 minLogLikelihood=530045.7987
+INFO: maximalDeformation=0.2071 minLogLikelihood=529581.6890
+INFO: maximalDeformation=0.0681 minLogLikelihood=529450.3012
+INFO: maximalDeformation=0.0949 minLogLikelihood=529285.2799
+INFO: maximalDeformation=0.0200 minLogLikelihood=529264.6034
+INFO: maximalDeformation=0.0768 minLogLikelihood=529121.9433
+INFO: maximalDeformation=0.0560 minLogLikelihood=529029.1513
+INFO: maximalDeformation=0.0784 minLogLikelihood=528885.7941
+INFO: maximalDeformation=0.0397 minLogLikelihood=528816.7738
+INFO: maximalDeformation=0.0300 minLogLikelihood=528755.4043
+INFO: maximalDeformation=0.0000 minLogLikelihood=528755.4043
+INFO: iterationNumber: 12
+INFO: maximalDeformationApplied: 1.1072
+INFO: =======================================================
+INFO: iterationNumber=13
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EM converged!
+INFO: maximalDeformation=0.2500 minLogLikelihood=528521.4584
+INFO: maximalDeformation=0.0329 minLogLikelihood=528444.1874
+INFO: maximalDeformation=0.0634 minLogLikelihood=528437.5299
+INFO: maximalDeformation=0.0283 minLogLikelihood=528410.4027
+INFO: maximalDeformation=0.0842 minLogLikelihood=528360.4898
+INFO: maximalDeformation=0.1524 minLogLikelihood=528088.5097
+INFO: maximalDeformation=0.1260 minLogLikelihood=527901.7630
+INFO: maximalDeformation=0.2451 minLogLikelihood=527726.6712
+INFO: maximalDeformation=0.2326 minLogLikelihood=527552.2348
+INFO: maximalDeformation=0.1987 minLogLikelihood=527324.5407
+INFO: maximalDeformation=0.0650 minLogLikelihood=527236.2285
+INFO: maximalDeformation=0.1514 minLogLikelihood=526972.9493
+INFO: maximalDeformation=0.1294 minLogLikelihood=526721.8848
+INFO: maximalDeformation=0.0626 minLogLikelihood=526669.9404
+INFO: maximalDeformation=0.0778 minLogLikelihood=526630.8548
+INFO: maximalDeformation=0.3203 minLogLikelihood=526579.3396
+INFO: maximalDeformation=0.1204 minLogLikelihood=526555.0437
+INFO: maximalDeformation=0.2547 minLogLikelihood=526435.8888
+INFO: maximalDeformation=0.0952 minLogLikelihood=526323.2802
+INFO: maximalDeformation=0.1218 minLogLikelihood=526233.0096
+INFO: maximalDeformation=0.0000 minLogLikelihood=526233.0096
+INFO: iterationNumber: 13
+INFO: maximalDeformationApplied: 0.8928
+INFO: =======================================================
+INFO: iterationNumber=14
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EM converged!
+INFO: maximalDeformation=0.2500 minLogLikelihood=526065.7084
+INFO: maximalDeformation=0.0777 minLogLikelihood=525947.1179
+INFO: maximalDeformation=0.5084 minLogLikelihood=525315.9985
+INFO: maximalDeformation=0.0913 minLogLikelihood=525268.6725
+INFO: maximalDeformation=0.1023 minLogLikelihood=525242.2591
+INFO: maximalDeformation=0.0547 minLogLikelihood=525182.5187
+INFO: maximalDeformation=0.0423 minLogLikelihood=525110.3895
+INFO: maximalDeformation=0.0800 minLogLikelihood=524983.4050
+INFO: maximalDeformation=0.0437 minLogLikelihood=524935.2027
+INFO: maximalDeformation=0.0575 minLogLikelihood=524891.2431
+INFO: maximalDeformation=0.0369 minLogLikelihood=524827.6789
+INFO: maximalDeformation=0.0551 minLogLikelihood=524764.2725
+INFO: maximalDeformation=0.0282 minLogLikelihood=524721.2163
+INFO: maximalDeformation=0.0184 minLogLikelihood=524704.1610
+INFO: maximalDeformation=0.0720 minLogLikelihood=524605.2088
+INFO: maximalDeformation=0.0277 minLogLikelihood=524558.4742
+INFO: maximalDeformation=0.0296 minLogLikelihood=524507.5082
+INFO: maximalDeformation=0.1568 minLogLikelihood=524437.2468
+INFO: maximalDeformation=0.0642 minLogLikelihood=524382.1948
+INFO: maximalDeformation=0.0942 minLogLikelihood=524284.2373
+INFO: maximalDeformation=0.0000 minLogLikelihood=524284.2373
+INFO: iterationNumber: 14
+INFO: maximalDeformationApplied: 0.9065
+INFO: =======================================================
+INFO: iterationNumber=15
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EM converged!
+INFO: maximalDeformation=0.5000 minLogLikelihood=524101.8676
+INFO: maximalDeformation=0.0604 minLogLikelihood=523987.0966
+INFO: maximalDeformation=0.1611 minLogLikelihood=523575.0595
+INFO: maximalDeformation=0.0671 minLogLikelihood=523366.4452
+INFO: maximalDeformation=0.1373 minLogLikelihood=522954.1023
+INFO: maximalDeformation=0.0658 minLogLikelihood=522756.4731
+INFO: maximalDeformation=0.0313 minLogLikelihood=522651.0246
+INFO: maximalDeformation=0.1622 minLogLikelihood=522073.0093
+INFO: maximalDeformation=0.0405 minLogLikelihood=521965.3171
+INFO: maximalDeformation=0.0194 minLogLikelihood=521922.9995
+INFO: maximalDeformation=0.0470 minLogLikelihood=521828.1363
+INFO: maximalDeformation=0.2128 minLogLikelihood=521432.3683
+INFO: maximalDeformation=0.0707 minLogLikelihood=521312.1324
+INFO: maximalDeformation=0.1064 minLogLikelihood=521196.0996
+INFO: maximalDeformation=0.1049 minLogLikelihood=521017.5619
+INFO: maximalDeformation=0.0432 minLogLikelihood=520894.7731
+INFO: maximalDeformation=0.0413 minLogLikelihood=520805.2671
+INFO: maximalDeformation=0.0847 minLogLikelihood=520660.9277
+INFO: maximalDeformation=0.0674 minLogLikelihood=520543.0624
+INFO: maximalDeformation=0.0343 minLogLikelihood=520359.3448
+INFO: maximalDeformation=0.0000 minLogLikelihood=520359.3448
+INFO: iterationNumber: 15
+INFO: maximalDeformationApplied: 0.9245
+INFO: =======================================================
+INFO: iterationNumber=16
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EM converged!
+INFO: maximalDeformation=0.1550 minLogLikelihood=519999.3620
+INFO: maximalDeformation=0.1010 minLogLikelihood=519902.3392
+INFO: maximalDeformation=0.0505 minLogLikelihood=519817.4495
+INFO: maximalDeformation=0.4822 minLogLikelihood=519390.1730
+INFO: maximalDeformation=0.2455 minLogLikelihood=519223.4856
+INFO: maximalDeformation=0.0571 minLogLikelihood=519112.7117
+INFO: maximalDeformation=0.1596 minLogLikelihood=518856.7005
+INFO: maximalDeformation=0.2237 minLogLikelihood=518555.5411
+INFO: maximalDeformation=0.1699 minLogLikelihood=518367.8540
+INFO: maximalDeformation=0.1543 minLogLikelihood=518226.5213
+INFO: maximalDeformation=0.0628 minLogLikelihood=518132.9218
+INFO: maximalDeformation=0.1644 minLogLikelihood=517860.9822
+INFO: maximalDeformation=0.0398 minLogLikelihood=517809.2174
+INFO: maximalDeformation=0.0125 minLogLikelihood=517794.3484
+INFO: maximalDeformation=0.2226 minLogLikelihood=517724.0901
+INFO: maximalDeformation=0.0999 minLogLikelihood=517538.8644
+INFO: maximalDeformation=0.1400 minLogLikelihood=517378.9620
+INFO: maximalDeformation=0.2417 minLogLikelihood=517176.6776
+INFO: maximalDeformation=0.1216 minLogLikelihood=517082.5190
+INFO: maximalDeformation=0.0251 minLogLikelihood=517072.7118
+INFO: maximalDeformation=0.0000 minLogLikelihood=517072.7118
+INFO: iterationNumber: 16
+INFO: maximalDeformationApplied: 0.8475
+INFO: =======================================================
+INFO: iterationNumber=17
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EM converged!
+INFO: maximalDeformation=0.2500 minLogLikelihood=516943.9483
+INFO: maximalDeformation=0.0689 minLogLikelihood=516927.7493
+INFO: maximalDeformation=0.0620 minLogLikelihood=516887.6366
+INFO: maximalDeformation=0.2430 minLogLikelihood=516579.7511
+INFO: maximalDeformation=0.1470 minLogLikelihood=516346.7390
+INFO: maximalDeformation=0.2687 minLogLikelihood=515911.7510
+INFO: maximalDeformation=0.2832 minLogLikelihood=515533.3649
+INFO: maximalDeformation=0.0329 minLogLikelihood=515470.4884
+INFO: maximalDeformation=0.4114 minLogLikelihood=515138.1231
+INFO: maximalDeformation=0.0169 minLogLikelihood=515113.4712
+INFO: maximalDeformation=0.0496 minLogLikelihood=515044.6835
+INFO: maximalDeformation=0.0526 minLogLikelihood=514980.2304
+INFO: maximalDeformation=0.1196 minLogLikelihood=514880.1590
+INFO: maximalDeformation=0.2222 minLogLikelihood=514715.0959
+INFO: maximalDeformation=0.1106 minLogLikelihood=514664.6480
+INFO: maximalDeformation=0.0640 minLogLikelihood=514510.3137
+INFO: maximalDeformation=0.1526 minLogLikelihood=514390.9129
+INFO: maximalDeformation=0.0918 minLogLikelihood=514227.4570
+INFO: maximalDeformation=0.1148 minLogLikelihood=514067.5832
+INFO: maximalDeformation=0.1294 minLogLikelihood=513743.0917
+INFO: maximalDeformation=0.0000 minLogLikelihood=513743.0917
+INFO: iterationNumber: 17
+INFO: maximalDeformationApplied: 1.2803
+INFO: =======================================================
+INFO: iterationNumber=18
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EMIterationNumber=2
+INFO: EM converged!
+INFO: maximalDeformation=0.3322 minLogLikelihood=513052.0222
+INFO: maximalDeformation=0.2179 minLogLikelihood=512660.8208
+INFO: maximalDeformation=0.1099 minLogLikelihood=512485.5268
+INFO: maximalDeformation=0.2331 minLogLikelihood=512200.1415
+INFO: maximalDeformation=0.1450 minLogLikelihood=512034.3665
+INFO: maximalDeformation=0.0135 minLogLikelihood=512020.9181
+INFO: maximalDeformation=0.2235 minLogLikelihood=511974.3735
+INFO: maximalDeformation=0.0393 minLogLikelihood=511921.7720
+INFO: maximalDeformation=0.2365 minLogLikelihood=511771.7214
+INFO: maximalDeformation=0.0660 minLogLikelihood=511711.9534
+INFO: maximalDeformation=0.0438 minLogLikelihood=511676.6057
+INFO: maximalDeformation=0.1160 minLogLikelihood=511544.5462
+INFO: maximalDeformation=0.1148 minLogLikelihood=511445.7715
+INFO: maximalDeformation=0.0709 minLogLikelihood=511406.7738
+INFO: maximalDeformation=0.0583 minLogLikelihood=511340.0650
+INFO: maximalDeformation=0.0304 minLogLikelihood=511320.9324
+INFO: maximalDeformation=0.0896 minLogLikelihood=511283.6738
+INFO: maximalDeformation=0.0592 minLogLikelihood=511198.2276
+INFO: maximalDeformation=0.0638 minLogLikelihood=511166.3115
+INFO: maximalDeformation=0.0512 minLogLikelihood=511130.0717
+INFO: maximalDeformation=0.0000 minLogLikelihood=511130.0717
+INFO: iterationNumber: 18
+INFO: maximalDeformationApplied: 1.2307
+INFO: =======================================================
+INFO: iterationNumber=19
+INFO: EMIterationNumber=0
+INFO: EMIterationNumber=1
+INFO: EM converged!
+INFO: maximalDeformation=0.0625 minLogLikelihood=511048.5846
+INFO: maximalDeformation=0.0302 minLogLikelihood=511012.8552
+INFO: maximalDeformation=0.0176 minLogLikelihood=510990.3121
+INFO: maximalDeformation=0.1025 minLogLikelihood=510851.9845
+INFO: maximalDeformation=0.2350 minLogLikelihood=510527.5555
+INFO: maximalDeformation=0.1033 minLogLikelihood=510351.4577
+INFO: maximalDeformation=0.1570 minLogLikelihood=510090.2741
+INFO: maximalDeformation=0.0489 minLogLikelihood=510031.4688
+INFO: maximalDeformation=0.1162 minLogLikelihood=509890.5203
+INFO: maximalDeformation=0.0479 minLogLikelihood=509841.7626
+INFO: maximalDeformation=0.0542 minLogLikelihood=509812.4642
+INFO: maximalDeformation=0.0262 minLogLikelihood=509775.1617
+INFO: maximalDeformation=0.0426 minLogLikelihood=509753.3594
+INFO: maximalDeformation=0.0473 minLogLikelihood=509706.0609
+INFO: maximalDeformation=0.0124 minLogLikelihood=509698.8508
+INFO: maximalDeformation=0.1091 minLogLikelihood=509639.2123
+INFO: maximalDeformation=0.0927 minLogLikelihood=509606.5832
+INFO: maximalDeformation=0.1602 minLogLikelihood=509575.9426
+INFO: maximalDeformation=0.0562 minLogLikelihood=509533.8644
+INFO: maximalDeformation=0.0529 minLogLikelihood=509459.1427
+INFO: maximalDeformation=0.0000 minLogLikelihood=509459.1427
+INFO: iterationNumber: 19
+INFO: maximalDeformationApplied: 0.9365
+INFO: =======================================================
+INFO: iterationNumber=20

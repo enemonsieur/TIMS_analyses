@@ -1,0 +1,13 @@
+good_eeg_channels=['Fp1', 'F3', 'FC5', 'FC1', 'C3', 'C4', 'FC6', 'FC2', 'F4', 'F8', 'Fp2', 'Cz']
+bad_eeg_channels=[]
+reference_channel=Cz
+n_valid_stim_epochs=30
+median_ioi_seconds=10.000000
+postpulse_crop_window_requested_s=(0.08, 1.0)
+postpulse_crop_window_actual_s=(0.08, 0.999)
+postpulse_hpf_hz=0.500000
+postpulse_hpf_iir_order=4
+final_tmin_tmax=(0.08, 0.999)
+final_epochs_fif_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\exp03_pulse_centered_analysis_run03\stim_epochs_final_0p08to1p00_hpf8_noica-epo.fif
+step_subplots_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\exp03_pulse_centered_analysis_run03\qc_steps_subplots_reference.png
+artifact_block_samples=1031

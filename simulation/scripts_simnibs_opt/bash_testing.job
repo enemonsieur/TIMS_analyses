@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Load the modules we need
+module purge
+module load hpc-env/13.1
+module load SimNIBS/4.1
+module load MATLAB/2023a
+
+# Define paths
+MAINPATH="/fs/dss/home/nodi2384/SUBS_OPTITACS/MRI_data/"
+SUBJECTID="control1"
+PATHOUT="/fs/dss/home/nodi2384/SUBS_OPTITACS/Output_Sim/"
+ATLASPATH="/fs/dss/home/nodi2384/SUBS_OPTITACS/MRI_data/atlas/BNA_MPM_thr25_1.25mm.nii.gz"
+FIELDTRIP="/fs/dss/home/nodi2384/fieldtrip-20240110/fieldtrip-20240110/"
+NIFTI="/fs/dss/home/nodi2384/fieldtrip-20240110/fieldtrip-20240110/external/spm12/"
+
+# Define ROI index
+ROI_INDEX="[177,178,179,180]"
+
+# Navigate to the working directory
+cd /fs/dss/home/nodi2384/SUBS_OPTITACS/code/
+
+# Test the function in MATLAB
+LD_PRELOAD="$EBROOTGCCCORE/lib64/libstdc++.so.6" matlab -nodisplay -nosplash -r "
+try
+    % Add required paths
+    addpath('${FIELDTRIP}');
+    addpath('${NIFTI}');
+    ft_defaults;
+
+    % Run the stats_efield function
+    stats_efield('${PATHOUT}', '${ATLASPATH}', ${ROI_INDEX}, '${MAINPATH}');
+    disp('Test completed successfully.');
+catch ME
+    disp(['Error during test: ', ME.message]);
+end
+exit;
+"
+# lunch the code in bash with: chmod +x bash_testing.job
+# ./bash_testing.job

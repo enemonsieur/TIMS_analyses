@@ -1,0 +1,24 @@
+* A pair of inductively-coupled RLC circuits with current sensors
+
+.subckt rlc_pair
++                in1_pos in1_neg in2_pos in2_neg
++                current1 current2
++                params: R1=0.2 L1=120u C1=470n
++                        R2=0.2 L2=120u C2=470n
++                        coupling=0.0001
++                        Irange=150
+
+	R1 in1_pos n_rl1 {R1}
+	L1 n_rl1 n_lc1 {L1}
+	C1 n_lc1 n_cs1 {C1}
+	V1 n_cs1 in1_neg 0
+	H1 current1 0 V1 {1.0/Irange}
+
+	R2 in2_pos n_rl2 {R2}
+	L2 n_rl2 n_lc2 {L2}
+	C2 n_lc2 n_cs2 {C2}
+	V2 n_cs2 in2_neg 0
+	H2 current2 0 V2 {1.0/Irange}
+
+	K1 L1 L2 {coupling}
+.ends  
