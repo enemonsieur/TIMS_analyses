@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pytims
 
+SHOW_PLOT_PREVIEW = False
+
 # Initialize protocol and enable channel A
 protocol = pytims.Protocol()
 protocol.enable_channel(pytims.Channel.A)
@@ -38,10 +40,11 @@ multi_freq_sine_samples = np.sum(
 multi_freq_sine_samples -= multi_freq_sine_samples.min()
 multi_freq_sine_samples /= multi_freq_sine_samples.max()
 
-# Plot arbitrary signals
-plt.plot(t, on_off_samples)
-plt.plot(t, multi_freq_sine_samples)
-plt.show()
+# Optional preview for interactive inspection; keep disabled in deterministic runs.
+if SHOW_PLOT_PREVIEW:
+    plt.plot(t, on_off_samples)
+    plt.plot(t, multi_freq_sine_samples)
+    plt.show()
 
 # Add signals to protocol
 on_off = protocol.add_arbitrary_signal(on_off_samples)

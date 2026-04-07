@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pytims
 
+SHOW_PLOT_PREVIEW = False
+
 # -----------------------------------
 # 1) Protocol setup
 # -----------------------------------
@@ -61,21 +63,22 @@ for bs in burst_starts:
 mod_tbs *= on_off_mask
 
 # -----------------------------------
-# 4) Plot sanity check
+# 4) Plot sanity check (optional)
 # -----------------------------------
-plot_duration = 5.0  # first second
-plot_n = int(plot_duration * sampling_rate)
+if SHOW_PLOT_PREVIEW:
+    plot_duration = 5.0
+    plot_n = int(plot_duration * sampling_rate)
 
-plt.figure(figsize=(12, 5))
-plt.plot(t[:plot_n], amp_5hz[:plot_n], label="A1/A2 amplitude envelope (5 Hz, gated)")
-plt.plot(t[:plot_n], on_off_mask[:plot_n], label="Burst gate (2 s ON / 3 s OFF)")
-plt.plot(t[:plot_n], mod_tbs[:plot_n], label="Modulation source (50 Hz triplets, gated)")
-plt.xlabel("Time (s)")
-plt.ylabel("Amplitude")
-plt.title("TIMS cTBS-like control signals")
-plt.legend()
-plt.tight_layout()
-plt.show()
+    plt.figure(figsize=(12, 5))
+    plt.plot(t[:plot_n], amp_5hz[:plot_n], label="A1/A2 amplitude envelope (5 Hz, gated)")
+    plt.plot(t[:plot_n], on_off_mask[:plot_n], label="Burst gate (2 s ON / 3 s OFF)")
+    plt.plot(t[:plot_n], mod_tbs[:plot_n], label="Modulation source (50 Hz triplets, gated)")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Amplitude")
+    plt.title("TIMS cTBS-like control signals")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
 # -----------------------------------
 # 5) Add signals to protocol

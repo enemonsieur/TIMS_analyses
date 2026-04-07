@@ -1,0 +1,11 @@
+exp06 baseline ssd component 1 artifact
+baseline_vhdr_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp06-baseline-gt_12hz_noSTIM_run01.vhdr
+selected_component=1
+channel_count=28
+baseline_gt_peak_hz=12.451172
+baseline_component_peak_hz=12.451172
+selected_lambda=116.839469
+signal_band_hz=(12.000000, 13.000000)
+view_band_hz=(4.000000, 20.000000)
+weights_npz=exp06_baseline_ssd_component1_weights.npz
+psd_figure=exp06_baseline_ssd_component1_psd.png

@@ -14,6 +14,7 @@ from pathlib import Path
 import csv
 from typing import Any
 
+import mne
 from mne.time_frequency import tfr_array_morlet
 import numpy as np
 from scipy.signal import butter, coherence, filtfilt, find_peaks, hilbert, iirnotch, sosfiltfilt, welch
@@ -44,6 +45,140 @@ def filter_signal(
     if not np.all(np.isfinite(bandpassed)):
         raise RuntimeError("Filtering produced non-finite values.")
     return bandpassed
+
+
+def load_exp06_saved_ssd_artifact(weights_path: Path) -> dict[str, Any]:
+    """Load the saved exp06 SSD artifact and validate the required fields."""
+    artifact_path = Path(weights_path)
+    if not artifact_path.exists():
+        raise FileNotFoundError(f"Required baseline SSD artifact is missing: {artifact_path}")
+
+    required_fields = {
+        "channel_names",
+        "sampling_rate_hz",
+        "signal_band_hz",
+        "view_band_hz",
+        "selected_component_index",
+        "selected_filter",
+        "selected_pattern",
+        "selected_lambda",
+        "baseline_peak_hz",
+    }
+    with np.load(artifact_path) as loaded_artifact:
+        missing_fields = sorted(field_name for field_name in required_fields if field_name not in loaded_artifact.files)
+        if missing_fields:
+            raise KeyError(f"Saved SSD artifact is missing required fields: {', '.join(missing_fields)}")
+
+        artifact = {
+            "channel_names": loaded_artifact["channel_names"].astype(str).tolist(),
+            "sampling_rate_hz": float(np.asarray(loaded_artifact["sampling_rate_hz"], dtype=float).ravel()[0]),
+            "signal_band_hz": tuple(np.asarray(loaded_artifact["signal_band_hz"], dtype=float).tolist()),
+            "view_band_hz": tuple(np.asarray(loaded_artifact["view_band_hz"], dtype=float).tolist()),
+            "selected_component_index": int(np.asarray(loaded_artifact["selected_component_index"], dtype=int).ravel()[0]),
+            "selected_filter": np.asarray(loaded_artifact["selected_filter"], dtype=float).ravel(),
+            "selected_pattern": np.asarray(loaded_artifact["selected_pattern"], dtype=float).ravel(),
+            "selected_lambda": float(np.asarray(loaded_artifact["selected_lambda"], dtype=float).ravel()[0]),
+            "baseline_peak_hz": float(np.asarray(loaded_artifact["baseline_peak_hz"], dtype=float).ravel()[0]),
+        }
+
+    if len(artifact["signal_band_hz"]) != 2 or len(artifact["view_band_hz"]) != 2:
+        raise ValueError("Saved SSD artifact band fields must each contain exactly two frequencies.")
+    return artifact
+
+
+def validate_exp06_saved_ssd_against_raw(
+    raw_eeg: Any,
+    saved_channel_names: list[str],
+    saved_sampling_rate_hz: float,
+    selected_filter: np.ndarray,
+    focus_channel: str | None = None,
+) -> None:
+    """Fail fast if a saved exp06 SSD artifact is incompatible with a target EEG recording."""
+    if list(raw_eeg.ch_names) != list(saved_channel_names):
+        raise RuntimeError("Stim EEG channels do not match the saved baseline SSD channel order.")
+    if not np.isclose(float(raw_eeg.info["sfreq"]), float(saved_sampling_rate_hz)):
+        raise RuntimeError(
+            f"Sampling rate mismatch between target EEG ({float(raw_eeg.info['sfreq']):.3f} Hz) and saved baseline "
+            f"weights ({float(saved_sampling_rate_hz):.3f} Hz)."
+        )
+
+    filter_vector = np.asarray(selected_filter, dtype=float).ravel()
+    if filter_vector.size != len(saved_channel_names):
+        raise RuntimeError("Saved selected_filter length does not match the saved channel list.")
+    if focus_channel is not None and focus_channel not in raw_eeg.ch_names:
+        raise RuntimeError(f"Required focus channel is missing from retained EEG channels: {focus_channel}")
+
+
+def apply_exp06_saved_ssd_to_events(
+    raw_eeg: Any,
+    events: np.ndarray,
+    selected_filter: np.ndarray,
+    view_band_hz: tuple[float, float],
+    epoch_duration_s: float,
+) -> tuple[Any, np.ndarray]:
+    """Apply one saved exp06 SSD filter to epoched EEG and return one component trace per epoch."""
+    import plot_helpers
+
+    spatial_filter = np.asarray(selected_filter, dtype=float).ravel()[np.newaxis, :]
+    epochs_view, component_epochs = plot_helpers.build_ssd_component_epochs(
+        raw_eeg,
+        events,
+        spatial_filter,
+        view_band_hz,
+        epoch_duration_s,
+    )
+    if component_epochs.shape[0] != 1:
+        raise RuntimeError("Saved SSD transfer expected exactly one component.")
+    return epochs_view, np.asarray(component_epochs[0], dtype=float)
+
+
+def compute_band_limited_epoch_triplet_metrics(
+    signal_epochs: np.ndarray,
+    reference_epochs: np.ndarray,
+    sampling_rate_hz: float,
+    band_hz: tuple[float, float],
+) -> dict[str, np.ndarray]:
+    """Filter matched epoch sets and compute z-scored means plus GT-locked ITPC."""
+    signal_array = np.asarray(signal_epochs, dtype=float)
+    reference_array = np.asarray(reference_epochs, dtype=float)
+    n_epochs = min(signal_array.shape[0], reference_array.shape[0])
+    if n_epochs < 1:
+        raise ValueError("Need at least one matched epoch to compute band-limited metrics.")
+
+    signal_band_epochs = filter_signal(signal_array[:n_epochs], sampling_rate_hz, band_hz[0], band_hz[1])
+    reference_band_epochs = filter_signal(reference_array[:n_epochs], sampling_rate_hz, band_hz[0], band_hz[1])
+    phase_diff = np.angle(hilbert(signal_band_epochs, axis=-1)) - np.angle(hilbert(reference_band_epochs, axis=-1))
+    itpc_curve = np.abs(np.mean(np.exp(1j * phase_diff), axis=0))
+
+    def _zscore_trace(trace: np.ndarray) -> np.ndarray:
+        trace_1d = np.asarray(trace, dtype=float).ravel()
+        return (trace_1d - np.mean(trace_1d)) / (np.std(trace_1d) + 1e-12)
+
+    return {
+        "signal_band_epochs": signal_band_epochs,
+        "reference_band_epochs": reference_band_epochs,
+        "mean_signal_trace_z": _zscore_trace(signal_band_epochs.mean(axis=0)),
+        "mean_reference_trace_z": _zscore_trace(reference_band_epochs.mean(axis=0)),
+        "itpc_curve": itpc_curve,
+    }
+
+
+def compute_mean_epoch_psd(
+    epoch_array: np.ndarray,
+    sampling_rate_hz: float,
+    view_band_hz: tuple[float, float],
+    n_fft: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Compute one mean Welch PSD across matched epochs."""
+    psd_values, psd_freqs_hz = mne.time_frequency.psd_array_welch(
+        np.asarray(epoch_array, dtype=float),
+        sfreq=sampling_rate_hz,
+        fmin=view_band_hz[0],
+        fmax=view_band_hz[1],
+        n_fft=n_fft,
+        verbose=False,
+    )
+    return psd_freqs_hz, np.mean(psd_values, axis=0)
 
 
 def pick_good_eeg_channels_from_baseline(
@@ -264,6 +399,114 @@ def detect_stim_blocks(
         raise ValueError(f"No ON blocks longer than {min_block_dur_s} s found.")
 
     return np.array(onsets, dtype=int), np.array(offsets, dtype=int)
+
+
+def build_event_array(start_samples: np.ndarray) -> np.ndarray:
+    """Return an MNE-style events array from one vector of event starts."""
+    start_vector = np.asarray(start_samples, dtype=int).ravel()
+    return np.column_stack(
+        [
+            start_vector,
+            np.zeros(start_vector.size, dtype=int),
+            np.ones(start_vector.size, dtype=int),
+        ]
+    )
+
+
+def build_late_off_events(
+    block_onsets_samples: np.ndarray,
+    block_offsets_samples: np.ndarray,
+    sampling_rate_hz: float,
+    window_start_s: float,
+    window_stop_s: float,
+) -> tuple[np.ndarray, float, int]:
+    """Build measured late-OFF event starts that fully fit before the next ON block."""
+    onsets = np.asarray(block_onsets_samples, dtype=int).ravel()
+    offsets = np.asarray(block_offsets_samples, dtype=int).ravel()
+    if onsets.size != offsets.size:
+        raise ValueError("block_onsets_samples and block_offsets_samples must have the same length.")
+    if onsets.size < 2:
+        raise ValueError("Need at least two ON blocks to build late-OFF events.")
+    if window_stop_s <= window_start_s:
+        raise ValueError("window_stop_s must be greater than window_start_s.")
+
+    window_duration_s = float(window_stop_s - window_start_s)
+    window_duration_samples = int(round(window_duration_s * sampling_rate_hz))
+    start_offset_samples = int(round(window_start_s * sampling_rate_hz))
+    late_off_starts = offsets[:-1] + start_offset_samples
+    valid_mask = late_off_starts + window_duration_samples <= onsets[1:]
+    return build_event_array(late_off_starts[valid_mask]), window_duration_s, window_duration_samples
+
+
+def extract_event_windows(
+    signal_1d: np.ndarray,
+    event_starts_samples: np.ndarray,
+    window_duration_samples: int,
+) -> np.ndarray:
+    """Extract fixed-length windows from one 1-D signal using event starts."""
+    vector = np.asarray(signal_1d, dtype=float).ravel()
+    starts = np.asarray(event_starts_samples, dtype=int).ravel()
+    if window_duration_samples < 1:
+        raise ValueError("window_duration_samples must be >= 1.")
+    if starts.size == 0:
+        return np.empty((0, window_duration_samples), dtype=float)
+    if np.any(starts < 0) or np.any(starts + window_duration_samples > vector.size):
+        raise ValueError("Requested event window exceeds signal bounds.")
+    return np.asarray(
+        [vector[int(start_sample):int(start_sample) + window_duration_samples] for start_sample in starts],
+        dtype=float,
+    )
+
+
+def rank_ssd_components_against_reference(
+    spatial_filters: np.ndarray,
+    raw_signal_band: Any,
+    raw_view_band: Any,
+    evaluation_mask: np.ndarray,
+    reference_band_signal: np.ndarray,
+    sampling_rate_hz: float,
+    signal_band_hz: tuple[float, float],
+    view_range_hz: tuple[float, float],
+    flank_gap_hz: float = 0.5,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Score SSD components by band-limited GT match and target-band peak shape."""
+    filters = np.asarray(spatial_filters, dtype=float)
+    mask = np.asarray(evaluation_mask, dtype=bool).ravel()
+    reference = np.asarray(reference_band_signal, dtype=float).ravel()
+    signal_band_width_hz = float(signal_band_hz[1] - signal_band_hz[0])
+    if filters.ndim != 2:
+        raise ValueError("spatial_filters must have shape (n_components, n_channels).")
+    if signal_band_width_hz <= 0:
+        raise ValueError("signal_band_hz must satisfy high > low.")
+
+    signal_data = raw_signal_band.get_data()
+    view_data = raw_view_band.get_data()
+    coherence_scores = []
+    peak_ratios = []
+    peak_freqs = []
+    for component_index in range(filters.shape[0]):
+        component_signal = filters[component_index] @ signal_data
+        component_view = filters[component_index] @ view_data
+        coherence_scores.append(
+            compute_coherence_band(
+                component_signal[mask],
+                reference[mask],
+                sampling_rate_hz,
+                signal_band_hz[0],
+                signal_band_hz[1],
+            )
+        )
+        peak_ratios.append(
+            compute_band_peak_ratio(
+                component_view[mask],
+                sampling_rate_hz,
+                signal_band_hz,
+                flank_width_hz=signal_band_width_hz,
+                flank_gap_hz=flank_gap_hz,
+            )
+        )
+        peak_freqs.append(find_psd_peak_frequency(component_view[mask], sampling_rate_hz, view_range_hz))
+    return np.asarray(coherence_scores, dtype=float), np.asarray(peak_ratios, dtype=float), np.asarray(peak_freqs, dtype=float)
 
 
 def build_matched_triplet_events(
@@ -826,6 +1069,49 @@ def compute_band_peak_ratio(
     signal_density = float(np.mean(psd_values[signal_mask]))
     flank_density = float(np.mean(psd_values[flank_mask]))
     return float(signal_density / (flank_density + 1e-30))
+
+
+def sample_phase_differences(
+    reference_signal: np.ndarray,
+    target_signal: np.ndarray,
+    sampling_rate_hz: float,
+    reference_frequency_hz: float,
+) -> np.ndarray:
+    """Sample wrapped target-vs-reference phase differences once per reference cycle."""
+    reference_vector = np.asarray(reference_signal, dtype=float).ravel()
+    target_vector = np.asarray(target_signal, dtype=float).ravel()
+    min_peak_distance_samples = max(1, int(round(0.8 * sampling_rate_hz / reference_frequency_hz)))
+    reference_peaks, _ = find_peaks(reference_vector, distance=min_peak_distance_samples)
+    if reference_peaks.size < 4:
+        reference_peaks = np.arange(0, reference_vector.size, min_peak_distance_samples, dtype=int)
+    phase_difference = np.angle(hilbert(target_vector)) - np.angle(hilbert(reference_vector))
+    return np.angle(np.exp(1j * phase_difference[reference_peaks]))
+
+
+def approximate_rayleigh_p(phases: np.ndarray) -> float:
+    """Approximate Rayleigh p-value for one circular phase sample."""
+    phase_vector = np.asarray(phases, dtype=float).ravel()
+    if phase_vector.size < 2:
+        return float("nan")
+    resultant_length = float(np.abs(np.sum(np.exp(1j * phase_vector))))
+    z_value = (resultant_length ** 2) / float(phase_vector.size)
+    return float(max(np.exp(-z_value) * (1.0 + (2.0 * z_value - z_value ** 2) / (4.0 * phase_vector.size)), 0.0))
+
+
+def find_psd_peak_frequency(
+    signal_1d: np.ndarray,
+    sampling_rate_hz: float,
+    frequency_range_hz: tuple[float, float],
+) -> float:
+    """Return the strongest Welch PSD peak inside one frequency range."""
+    vector = np.asarray(signal_1d, dtype=float).ravel()
+    frequencies_hz, psd_values = welch(vector, fs=sampling_rate_hz, nperseg=min(4096, vector.size))
+    visible_mask = (frequencies_hz >= frequency_range_hz[0]) & (frequencies_hz <= frequency_range_hz[1])
+    if not np.any(visible_mask):
+        return float("nan")
+    visible_freqs_hz = frequencies_hz[visible_mask]
+    visible_psd_values = psd_values[visible_mask]
+    return float(visible_freqs_hz[int(np.argmax(visible_psd_values))])
 
 
 def compute_snr10_db(signal_1d: np.ndarray, sampling_rate_hz: float) -> float:

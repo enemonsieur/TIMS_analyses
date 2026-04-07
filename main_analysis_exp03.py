@@ -85,11 +85,14 @@ reference_channel = "Cz" if "Cz" in good_eeg_channels else good_eeg_channels[0]
 # -------------------------
 # STIM -> EVENTS + EPOCHING
 # -------------------------
+# Detect pulse onsets from the stim marker channel; these drive epoch alignment.
 stim_marker = stim_raw.copy().pick(["stim"]).get_data()[0]
 stim_onsets_samples, median_ioi_seconds, _, _ = detect_stim_onsets(stim_marker=stim_marker, sampling_rate_hz=sfreq)
+# MNE event format: [sample_index, 0, event_id=1].
 events = np.c_[stim_onsets_samples, np.zeros_like(stim_onsets_samples), np.ones_like(stim_onsets_samples)].astype(int)
 
 raw_eeg = stim_raw.copy().pick(good_eeg_channels)
+# No baseline correction here — artifact zeroing handles the pre-pulse period explicitly below.
 epochs_raw = mne.Epochs(
     raw_eeg,
     events,

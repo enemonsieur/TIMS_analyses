@@ -17,7 +17,7 @@ DATA_DIR = Path(r"C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_dat
 BASELINE_VHDR = DATA_DIR / "exp05-phantom-rs-GT-cTBS-run02.vhdr"
 STIM_100_VHDR = DATA_DIR / "exp05-phantom-rs-STIM-ON-GT-cTBS-run01.vhdr"
 STIM_30_VHDR = DATA_DIR / "exp05-phantom-rs-STIM-ON-30pctIntensity-GT-cTBS-run01.vhdr"
-OUTPUT_DIRECTORY = Path(r"C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP_05\channel_avg")
+OUTPUT_DIRECTORY = Path(r"C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP05_channel_avg")
 OUTPUT_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
 EPOCH_PRE_S = 0.5

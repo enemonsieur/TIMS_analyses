@@ -1,0 +1,42 @@
+exp06 baseline channel qc
+baseline_vhdr_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp06-baseline-gt_12hz_noSTIM_run01.vhdr
+baseline_duration_s=321.180000
+sampling_rate_hz=1000.000000
+eeg_channel_count=31
+view_start_s=2.000000
+view_stop_s=22.000000
+view_band_hz=[1.000000, 40.000000]
+notch_hz=50.000000
+
+channels_sorted_by_std_uv_desc
+TP9: std_uv=3.916 peak_abs_uv=24.882
+TP10: std_uv=3.916 peak_abs_uv=24.882
+Fp1: std_uv=3.621 peak_abs_uv=21.661
+O2: std_uv=2.420 peak_abs_uv=7.059
+P8: std_uv=2.241 peak_abs_uv=6.073
+Oz: std_uv=1.983 peak_abs_uv=7.064
+O1: std_uv=1.949 peak_abs_uv=10.850
+P4: std_uv=1.635 peak_abs_uv=5.903
+CP6: std_uv=1.437 peak_abs_uv=5.033
+T8: std_uv=1.400 peak_abs_uv=5.342
+Pz: std_uv=1.266 peak_abs_uv=4.390
+CP1: std_uv=1.250 peak_abs_uv=5.616
+Cz: std_uv=1.229 peak_abs_uv=6.441
+CP2: std_uv=1.225 peak_abs_uv=5.278
+P7: std_uv=1.201 peak_abs_uv=6.099
+P3: std_uv=1.178 peak_abs_uv=4.453
+FT10: std_uv=1.155 peak_abs_uv=4.150
+F7: std_uv=1.101 peak_abs_uv=3.789
+F4: std_uv=1.083 peak_abs_uv=4.520
+C4: std_uv=1.078 peak_abs_uv=4.022
+FC2: std_uv=1.074 peak_abs_uv=3.573
+FC6: std_uv=1.057 peak_abs_uv=3.783
+Fp2: std_uv=1.047 peak_abs_uv=3.883
+CP5: std_uv=1.039 peak_abs_uv=4.233
+F8: std_uv=0.976 peak_abs_uv=3.392
+F3: std_uv=0.973 peak_abs_uv=3.712
+C3: std_uv=0.957 peak_abs_uv=3.778
+FC5: std_uv=0.955 peak_abs_uv=3.681
+FC1: std_uv=0.949 peak_abs_uv=3.572
+T7: std_uv=0.934 peak_abs_uv=3.623
+FT9: std_uv=0.000 peak_abs_uv=0.000

@@ -1,0 +1,29 @@
+exp06 qc context
+baseline_vhdr_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp06-baseline-gt_12hz_noSTIM_run01.vhdr
+stim_vhdr_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp06-STIM-iTBS_run02.vhdr
+baseline_duration_s=321.180
+stim_duration_s=757.680
+sampling_rate_hz=1000.000
+baseline_channel_count=33
+stim_channel_count=33
+required_channels=Cz,ground_truth,stim
+baseline_gt_peak_hz=12.451172
+expected_intensity_order=0.10,0.20,0.30,0.40,0.50
+expected_on_duration_s=2.000
+expected_off_duration_s=4.000
+expected_cycles_per_block=20
+expected_total_on_blocks=100
+measured_on_blocks=80
+measured_on_median_s=1.913000
+measured_off_median_s=4.097000
+measured_on_range_s=[1.880000, 1.942000]
+measured_off_range_s=[4.058000, 4.120000]
+first_detected_onset_s=160.198000
+last_detected_onset_s=634.194000
+complete_observed_20_cycle_groups=4
+remainder_blocks_after_grouping=0
+protocol_block_sanity=run02 does not match the full five-block protocol: expected 100 ON blocks, observed 80.
+observed_group_1_expected_level=0.10 range_s=[160.198, 276.078]
+observed_group_2_expected_level=0.20 range_s=[280.197, 396.099]
+observed_group_3_expected_level=0.30 range_s=[400.196, 516.119]
+observed_group_4_expected_level=0.40 range_s=[520.195, 636.136]

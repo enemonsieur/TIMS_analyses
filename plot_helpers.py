@@ -101,6 +101,375 @@ def build_ssd_component_epochs(raw, events, spatial_filters, view_band_hz, epoch
     return epochs_view, component_epochs
 
 
+def style_clean_axis(axis, grid_alpha=0.15):
+    """Apply the repo default clean axis styling."""
+    axis.grid(alpha=grid_alpha)
+    axis.spines["top"].set_visible(False)
+    axis.spines["right"].set_visible(False)
+
+
+def save_timing_windows_figure(
+    timing_axis_s,
+    stim_segment,
+    onsets_s,
+    offsets_s,
+    late_off_starts_s,
+    late_off_duration_s,
+    output_path,
+    title,
+):
+    """Save one orientation figure with measured ON blocks and accepted late-OFF windows."""
+    fig, axis = plt.subplots(figsize=(11.5, 3.6), constrained_layout=True)
+    axis.plot(timing_axis_s, stim_segment, color="black", lw=0.9)
+    for onset_s, offset_s in zip(onsets_s, offsets_s):
+        axis.axvspan(onset_s, offset_s, color="0.75", alpha=0.35)
+    for late_off_start_s in late_off_starts_s:
+        axis.axvspan(late_off_start_s, late_off_start_s + late_off_duration_s, color="steelblue", alpha=0.28)
+    axis.set(xlabel="Time from first 10% ON block (s)", ylabel="STIM (V)", title=title)
+    axis.text(
+        0.015,
+        0.94,
+        "Gray = ON blocks\nBlue = late-OFF windows",
+        transform=axis.transAxes,
+        va="top",
+        fontsize=8.5,
+        bbox={"facecolor": "white", "alpha": 0.75, "edgecolor": "none", "pad": 2.5},
+    )
+    style_clean_axis(axis, grid_alpha=0.15)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+
+
+def save_multiblock_timing_windows_figure(
+    timing_axis_s,
+    stim_segment,
+    block_onsets_s,
+    block_offsets_s,
+    window_starts_by_block_s,
+    window_duration_s,
+    intensity_colors,
+    output_path,
+    title,
+    xlabel,
+    annotation_text,
+    ylabel="STIM (V)",
+):
+    """Save one timing figure with measured ON blocks and accepted windows by block."""
+    fig, axis = plt.subplots(figsize=(12.4, 3.9), constrained_layout=True)
+    axis.plot(timing_axis_s, stim_segment, color="black", lw=0.8)
+    for onset_s, offset_s in zip(block_onsets_s, block_offsets_s, strict=True):
+        axis.axvspan(onset_s, offset_s, color="0.82", alpha=0.35)
+    for block_window_starts_s, intensity_color in zip(window_starts_by_block_s, intensity_colors, strict=True):
+        for window_start_s in block_window_starts_s:
+            axis.axvspan(window_start_s, window_start_s + window_duration_s, color=intensity_color, alpha=0.32)
+    axis.text(
+        0.015,
+        0.96,
+        annotation_text,
+        transform=axis.transAxes,
+        va="top",
+        fontsize=8.3,
+        bbox={"facecolor": "white", "alpha": 0.75, "edgecolor": "none", "pad": 2.5},
+    )
+    axis.set(xlabel=xlabel, ylabel=ylabel, title=title)
+    style_clean_axis(axis, grid_alpha=0.15)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+
+
+def save_two_line_summary_figure(
+    x_values,
+    raw_values,
+    recovered_values,
+    point_texts,
+    output_path,
+    title,
+    xlabel,
+    ylabel,
+    raw_label,
+    recovered_label="SSD",
+    raw_color="black",
+    recovered_color="steelblue",
+):
+    """Save one two-line summary figure with short point annotations."""
+    fig, axis = plt.subplots(figsize=(10.2, 5.2), constrained_layout=True)
+    axis.plot(x_values, raw_values, color=raw_color, lw=1.8, marker="o", ms=6, label=raw_label)
+    axis.plot(x_values, recovered_values, color=recovered_color, lw=2.3, marker="o", ms=6, label=recovered_label)
+    for x_value, y_value, point_text in zip(x_values, recovered_values, point_texts, strict=True):
+        axis.text(x_value, y_value + 0.006, point_text, ha="center", va="bottom", fontsize=8)
+    axis.set(xticks=x_values, xlabel=xlabel, ylabel=ylabel, title=title)
+    axis.legend(frameon=False, loc="upper right")
+    style_clean_axis(axis, grid_alpha=0.15)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+
+
+def save_gt_locking_with_peak_summary_figure(
+    x_values,
+    raw_values,
+    recovered_values,
+    recovered_peak_hz_values,
+    event_counts,
+    signal_band_hz,
+    reference_peak_hz,
+    output_path,
+    title,
+    raw_label,
+    recovered_label="SSD",
+    raw_color="black",
+    recovered_color="steelblue",
+):
+    """Save one claim-first summary figure: GT-locking plus recovered peak validity."""
+    figure, (locking_axis, peak_axis) = plt.subplots(
+        1,
+        2,
+        figsize=(12.0, 4.8),
+        constrained_layout=True,
+        gridspec_kw={"width_ratios": [1.15, 1.0]},
+    )
+
+    locking_axis.plot(x_values, raw_values, color=raw_color, lw=1.8, marker="o", ms=6, label=raw_label)
+    locking_axis.plot(x_values, recovered_values, color=recovered_color, lw=2.2, marker="o", ms=6, label=recovered_label)
+    locking_axis.set(
+        xticks=x_values,
+        xlabel="Run02 stimulation block (%)",
+        ylabel="Mean GT-locking",
+        title="GT-locking support",
+    )
+    for x_value, raw_value, recovered_value, event_count in zip(
+        x_values,
+        raw_values,
+        recovered_values,
+        event_counts,
+        strict=True,
+    ):
+        locking_axis.text(
+            x_value,
+            max(raw_value, recovered_value) + 0.01,
+            f"n={event_count}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+    locking_axis.legend(frameon=False, loc="lower right")
+    style_clean_axis(locking_axis, grid_alpha=0.15)
+
+    peak_axis.axhspan(signal_band_hz[0], signal_band_hz[1], color=TIMS_SIGNAL_BAND_COLOR, alpha=0.85)
+    peak_axis.axhline(reference_peak_hz, color="darkorange", lw=1.0, ls="--")
+    in_band_mask = (
+        (np.asarray(recovered_peak_hz_values, dtype=float) >= float(signal_band_hz[0]))
+        & (np.asarray(recovered_peak_hz_values, dtype=float) <= float(signal_band_hz[1]))
+    )
+    point_colors = ["steelblue" if is_in_band else "firebrick" for is_in_band in in_band_mask]
+    peak_axis.plot(x_values, recovered_peak_hz_values, color="0.55", lw=1.2, zorder=1)
+    peak_axis.scatter(x_values, recovered_peak_hz_values, c=point_colors, s=48, zorder=2)
+    for x_value, peak_hz in zip(x_values, recovered_peak_hz_values, strict=True):
+        peak_axis.text(x_value, peak_hz + 0.18, f"{peak_hz:.2f}", ha="center", va="bottom", fontsize=8)
+    peak_axis.set(
+        xticks=x_values,
+        xlabel="Run02 stimulation block (%)",
+        ylabel="Recovered SSD peak (Hz)",
+        title="Spectral validity check",
+    )
+    peak_axis.set_ylim(min(3.5, signal_band_hz[0] - 1.0), max(14.0, signal_band_hz[1] + 1.0))
+    peak_axis.text(
+        0.02,
+        0.96,
+        f"Target band: {signal_band_hz[0]:.2f}-{signal_band_hz[1]:.2f} Hz\nReference peak: {reference_peak_hz:.2f} Hz",
+        transform=peak_axis.transAxes,
+        va="top",
+        fontsize=8,
+        bbox={"facecolor": "white", "alpha": 0.78, "edgecolor": "none", "pad": 2.5},
+    )
+    style_clean_axis(peak_axis, grid_alpha=0.15)
+
+    figure.suptitle(title, fontsize=12.2)
+    figure.savefig(output_path, dpi=220)
+    plt.close(figure)
+
+
+def save_peak_normalized_psd_panel_figure(
+    panels,
+    signal_band_hz,
+    baseline_peak_hz,
+    view_band_hz,
+    focus_label,
+    intensity_colors,
+    output_path,
+    title,
+    ground_truth_color="darkorange",
+    raw_color="black",
+    recovered_color="steelblue",
+):
+    """Save one panel figure with GT, raw-channel, and SSD peak-normalized PSDs."""
+    fig, axes = plt.subplots(1, len(panels), figsize=(15.8, 4.1), constrained_layout=True, sharey=True)
+    for axis, panel, intensity_color in zip(np.atleast_1d(axes), panels, intensity_colors, strict=True):
+        axis.plot(panel["freqs_hz"], panel["ground_truth_peak_normalized_psd"], color=ground_truth_color, lw=1.9, label="GT")
+        axis.plot(panel["freqs_hz"], panel["focus_peak_normalized_psd"], color=raw_color, lw=1.4, label=focus_label)
+        axis.plot(panel["freqs_hz"], panel["recovered_peak_normalized_psd"], color=recovered_color, lw=2.0, label="SSD")
+        axis.axvspan(signal_band_hz[0], signal_band_hz[1], color=TIMS_SIGNAL_BAND_COLOR, alpha=0.75)
+        axis.axvline(baseline_peak_hz, color=ground_truth_color, ls="--", lw=0.9)
+        status_text = "in band" if panel["recovered_peak_in_band"] else "out of band"
+        axis.text(
+            0.03,
+            0.96,
+            f"SSD peak: {panel['recovered_peak_hz']:.2f} Hz\n{status_text}",
+            transform=axis.transAxes,
+            va="top",
+            fontsize=7.8,
+            color=recovered_color if panel["recovered_peak_in_band"] else "firebrick",
+            bbox={"facecolor": "white", "alpha": 0.78, "edgecolor": "none", "pad": 2.0},
+        )
+        axis.set_title(f"{panel['label']} (n={panel['event_count']})", color=intensity_color, pad=8)
+        axis.set_xlabel("Frequency (Hz)")
+        axis.set_xlim(*view_band_hz)
+        axis.set_ylim(0.0, 1.05)
+        style_clean_axis(axis, grid_alpha=0.15)
+    axes = np.atleast_1d(axes)
+    axes[0].set_ylabel("Peak-normalized mean PSD")
+    axes[-1].legend(frameon=False, loc="upper right")
+    fig.suptitle(title, fontsize=12.2)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+
+
+def save_psd_topomap_comparison(
+    spatial_pattern,
+    info,
+    spectral_ratio,
+    psd_freqs_hz,
+    psd_lines,
+    signal_band_hz,
+    reference_frequency_hz,
+    view_band_hz,
+    output_path,
+    title,
+    ylabel="PSD",
+    topomap_title=None,
+):
+    """Save one topomap + plain PSD comparison figure."""
+    fig, (topo_axis, psd_axis) = plt.subplots(
+        1,
+        2,
+        figsize=(9.8, 4.1),
+        constrained_layout=True,
+        gridspec_kw={"width_ratios": [1.0, 1.35]},
+    )
+    mne.viz.plot_topomap(spatial_pattern, info, ch_type="eeg", axes=topo_axis, show=False, cmap=TIMS_TOPO_CMAP)
+    topo_axis.set_title(topomap_title or f"Saved comp 1 | lambda={spectral_ratio:.2f}")
+    for label, mean_psd, color, line_width in psd_lines:
+        psd_axis.semilogy(psd_freqs_hz, mean_psd, color=color, lw=line_width, label=label)
+    psd_axis.axvspan(signal_band_hz[0], signal_band_hz[1], color=TIMS_SIGNAL_BAND_COLOR, alpha=0.8)
+    psd_axis.axvline(reference_frequency_hz, color="darkorange", lw=1.0, ls="--")
+    psd_axis.set(xlim=view_band_hz, xlabel="Frequency (Hz)", ylabel=ylabel, title=title)
+    psd_axis.legend(frameon=False, loc="upper right")
+    style_clean_axis(psd_axis, grid_alpha=0.2)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+
+
+def save_line_comparison_figure(
+    x_axis_s,
+    line_specs,
+    output_path,
+    title,
+    xlabel,
+    ylabel,
+    ylim=None,
+    zero_line=False,
+):
+    """Save one simple multi-line comparison figure."""
+    fig, axis = plt.subplots(figsize=(9.8, 4.1), constrained_layout=True)
+    for label, y_values, color, line_width in line_specs:
+        axis.plot(x_axis_s, y_values, color=color, lw=line_width, label=label)
+    if zero_line:
+        axis.axhline(0.0, color="0.6", lw=0.8, ls="--")
+    axis.set(xlabel=xlabel, ylabel=ylabel, title=title)
+    if ylim is not None:
+        axis.set_ylim(*ylim)
+    axis.legend(frameon=False, loc="upper right")
+    style_clean_axis(axis, grid_alpha=0.15)
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+
+
+def save_run02_itpc_course_figure(
+    time_axis_s,
+    ssd_itpc_curves,
+    intensity_labels,
+    event_counts,
+    intensity_colors,
+    signal_band_hz,
+    on_window_s,
+    output_path,
+    title,
+):
+    """Save one claim-first shared-axis SSD ITPC figure across run02 intensities."""
+    time_axis = np.asarray(time_axis_s, dtype=float).ravel()
+    curves = np.asarray(ssd_itpc_curves, dtype=float)
+    counts = np.asarray(event_counts, dtype=int).ravel()
+    if curves.ndim != 2:
+        raise ValueError("ssd_itpc_curves must have shape (n_curves, n_samples).")
+    if curves.shape[0] != len(intensity_labels):
+        raise ValueError("Need one intensity label per SSD ITPC curve.")
+    if curves.shape[0] != counts.shape[0]:
+        raise ValueError("Need one event count per SSD ITPC curve.")
+    if curves.shape[0] != len(intensity_colors):
+        raise ValueError("Need one intensity color per SSD ITPC curve.")
+    if curves.shape[1] != time_axis.shape[0]:
+        raise ValueError("Every SSD ITPC curve must match time_axis_s length.")
+
+    figure, axis = plt.subplots(figsize=(9.8, 4.8), constrained_layout=True)
+    for curve, label, count, color in zip(curves, intensity_labels, counts, intensity_colors, strict=True):
+        axis.plot(time_axis, curve, color=color, lw=2.2, label=f"{label} (n={count})")
+
+    ymin = float(np.min(curves))
+    ymax = float(np.max(curves))
+    ypad = max(0.015, 0.08 * (ymax - ymin))
+    xpad = 0.08 * float(time_axis[-1] - time_axis[0])
+    axis.set(
+        xlabel="Time within accepted ON window (s)",
+        ylabel="GT-referenced ITPC",
+        title=title,
+        ylim=(max(0.0, ymin - ypad), min(1.0, ymax + ypad)),
+        xlim=(float(time_axis[0]), float(time_axis[-1]) + xpad),
+    )
+    axis.text(
+        0.015,
+        0.96,
+        f"Band: {signal_band_hz[0]:.2f}-{signal_band_hz[1]:.2f} Hz\nAccepted ON window: {on_window_s[0]:.1f}-{on_window_s[1]:.1f} s",
+        transform=axis.transAxes,
+        va="top",
+        fontsize=8.1,
+        color="0.25",
+    )
+    # Label each curve directly so the eye stays on the trajectories, not a legend box.
+    label_indices = np.arange(curves.shape[0])
+    label_y = np.asarray([np.median(curve[-60:]) for curve in curves], dtype=float)
+    sorted_order = np.argsort(label_y)
+    min_gap = 0.028
+    for rank in range(1, len(sorted_order)):
+        current_index = sorted_order[rank]
+        previous_index = sorted_order[rank - 1]
+        if label_y[current_index] - label_y[previous_index] < min_gap:
+            label_y[current_index] = label_y[previous_index] + min_gap
+    label_y = np.clip(label_y, axis.get_ylim()[0] + 0.015, axis.get_ylim()[1] - 0.015)
+    label_x = float(time_axis[-1] + 0.018 * (time_axis[-1] - time_axis[0]))
+    for curve_index in label_indices:
+        axis.text(
+            label_x,
+            float(label_y[curve_index]),
+            f"{intensity_labels[curve_index]} (n={counts[curve_index]})",
+            color=intensity_colors[curve_index],
+            fontsize=8.6,
+            va="center",
+            ha="left",
+        )
+    style_clean_axis(axis, grid_alpha=0.1)
+    figure.savefig(output_path, dpi=220)
+    plt.close(figure)
+
+
 def plot_ssd_component_summary(
     epochs,
     spatial_patterns,
@@ -118,9 +487,10 @@ def plot_ssd_component_summary(
     comparison_component_epochs=None,
     comparison_color="gray",
     comparison_label=None,
-    spectral_ratio_label="Eval",
+    component_numbers=None,
+    temporal_reference_data=None,
 ):
-    """Save a plotSSD-style SSD component overview with topomaps and mean PSDs."""
+    """Save a plotSSD-style SSD component overview with topomaps, mean PSDs, and temporal waveforms."""
     if np.iscomplexobj(component_epochs):
         component_epochs = np.real(component_epochs)
     if comparison_component_epochs is not None and np.iscomplexobj(comparison_component_epochs):
@@ -134,6 +504,10 @@ def plot_ssd_component_summary(
     )
     if n_display < 1:
         raise ValueError("No SSD components are available for plotting.")
+    if component_numbers is None:
+        component_numbers = list(range(1, n_display + 1))
+    if len(component_numbers) < n_display:
+        raise ValueError("component_numbers must cover all displayed SSD components.")
 
     freq_low, freq_high = map(float, freq_band_hz)
     sfreq = float(epochs.info["sfreq"])
@@ -141,9 +515,10 @@ def plot_ssd_component_summary(
     if psd_freq_range_hz is None:
         psd_freq_range_hz = (max(2.0, freq_center - 10.0), min(sfreq / 2.0, freq_center + 10.0))
 
-    fig, axes = plt.subplots(2, n_display, figsize=(3.5 * n_display, 7.0), constrained_layout=True)
+    n_rows = 3 if temporal_reference_data is not None else 2
+    fig, axes = plt.subplots(n_rows, n_display, figsize=(3.5 * n_display, 3.5 * n_rows), constrained_layout=True)
     if n_display == 1:
-        axes = np.asarray(axes, dtype=object).reshape(2, 1)
+        axes = np.asarray(axes, dtype=object).reshape(n_rows, 1)
 
     for component_index in range(n_display):
         topomap_axis = axes[0, component_index]
@@ -157,7 +532,7 @@ def plot_ssd_component_summary(
             cmap=TIMS_TOPO_CMAP,
         )
         topomap_axis.set_title(
-            f"Comp {component_index + 1}\n{spectral_ratio_label}: {float(spectral_ratios[component_index]):.2f}",
+            f"Comp {int(component_numbers[component_index])} | lambda={float(spectral_ratios[component_index]):.2f}",
             fontweight="bold",
         )
 
@@ -225,6 +600,20 @@ def plot_ssd_component_summary(
         if comparison_mean_psd is not None and component_index == 0:
             psd_axis.legend(fontsize=8, loc="upper right")
 
+        if temporal_reference_data is not None:
+            temporal_axis = axes[2, component_index]
+            mean_component_waveform = np.mean(component_epochs[component_index], axis=0)
+            time_axis_s = np.arange(len(mean_component_waveform)) / sfreq
+            temporal_axis.plot(time_axis_s, mean_component_waveform, lw=1.8, color=line_color, label=condition_name)
+            if temporal_reference_data.shape[0] == component_epochs.shape[-1]:
+                temporal_axis.plot(time_axis_s, temporal_reference_data, lw=1.5, color="darkorange",
+                                  linestyle="--", alpha=0.8, label="GT reference")
+            temporal_axis.set_xlabel("Time (s)", fontweight="bold", fontsize=9)
+            temporal_axis.set_ylabel("Amplitude (µV)", fontweight="bold", fontsize=9)
+            temporal_axis.grid(True, alpha=0.25)
+            if component_index == 0:
+                temporal_axis.legend(fontsize=8, loc="upper right")
+
     fig.suptitle(
         f"SSD Components: {freq_low:.0f}-{freq_high:.0f} Hz - {condition_name}",
         fontsize=15,
@@ -246,7 +635,8 @@ def plot_ssd_component_tfr(
     frequency_range_hz=(4.0, 25.0),
     display_window_s=None,
     reference_frequency_hz=None,
-    spectral_ratio_label="Eval",
+    component_numbers=None,
+    time_offset_s=0.0,
 ):
     """Save an OFF-epoch Morlet TFR as absolute log-power with Morlet-safe cropping."""
     if np.iscomplexobj(component_epochs):
@@ -255,6 +645,10 @@ def plot_ssd_component_tfr(
     n_display = min(int(n_components), int(component_epochs.shape[0]), int(len(spectral_ratios)))
     if n_display < 1:
         raise ValueError("No SSD components are available for TFR plotting.")
+    if component_numbers is None:
+        component_numbers = list(range(1, n_display + 1))
+    if len(component_numbers) < n_display:
+        raise ValueError("component_numbers must cover all displayed SSD components.")
 
     epoch_times_s = np.asarray(epochs.times, dtype=float)
     frequencies_hz = np.arange(float(frequency_range_hz[0]), float(frequency_range_hz[1]) + 1.0, 1.0, dtype=float)
@@ -304,7 +698,12 @@ def plot_ssd_component_tfr(
     fig, axes = plt.subplots(1, n_display, figsize=(4.2 * n_display, 4.2), constrained_layout=True)
     axes = np.atleast_1d(axes)
     image = None
-    extent = [float(epoch_times_s[display_mask][0]), float(epoch_times_s[display_mask][-1]), float(frequencies_hz[0]), float(frequencies_hz[-1])]
+    extent = [
+        float(epoch_times_s[display_mask][0] + time_offset_s),
+        float(epoch_times_s[display_mask][-1] + time_offset_s),
+        float(frequencies_hz[0]),
+        float(frequencies_hz[-1]),
+    ]
     for component_index, axis in enumerate(axes):
         image = axis.imshow(
             mean_power_db[component_index],
@@ -317,8 +716,8 @@ def plot_ssd_component_tfr(
         )
         if reference_frequency_hz is not None:
             axis.axhline(float(reference_frequency_hz), color="darkorange", lw=1.0, ls="--")
-        axis.set_title(f"Comp {component_index + 1} | {spectral_ratio_label} {float(spectral_ratios[component_index]):.2f}")
-        axis.set_xlabel("Time in OFF epoch (s)")
+        axis.set_title(f"Comp {int(component_numbers[component_index])} | lambda={float(spectral_ratios[component_index]):.2f}")
+        axis.set_xlabel("Time after measured STIM offset (s)")
         if component_index == 0:
             axis.set_ylabel("Frequency (Hz)")
 

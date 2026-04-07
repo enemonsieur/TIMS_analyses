@@ -1,0 +1,14 @@
+Cz baseline vs stim probe pass 4
+channel_name=Cz
+window_start_s=0.000
+window_duration_s=20.000
+filter_range_hz=(0.500, 40.000)
+psd_range_hz=(1.000, 40.000)
+baseline_window_mean_uv=0.072128
+stim_window_mean_uv=1.319026
+baseline_window_std_uv=4.303662
+stim_window_std_uv=1137.983837
+baseline_psd_peak_hz=10.000000
+stim_psd_peak_hz=1.000000
+baseline_psd_epochs=66
+stim_psd_epochs=78

@@ -1,0 +1,15 @@
+exp05 ssd recovery skript version
+gt_peak_frequency_hz=7.080078
+signal_band_hz=(6.080078, 8.080078)
+late_off_window_s=(1.500, 2.500)
+baseline_windows=313
+windows_30=62
+windows_100=99
+selected_component=8
+selected_lambda=0.424698
+baseline_coherence=0.003981
+baseline_peak_ratio=45.099932
+30pct_coherence=0.025760
+30pct_peak_ratio=50.445426
+100pct_coherence=0.046657
+100pct_peak_ratio=156.907061

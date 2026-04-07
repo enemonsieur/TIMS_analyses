@@ -4,7 +4,7 @@ These instructions apply to everything under this directory tree.
 
 ### Project structure (don’t assume a `src/` package)
 - No `src/` directory in this repo.
-- Reusable “core” code goes in: `preprocessing.py`, `plot_helpers.py`, `util.py`.
+- Reusable “core” code goes in: `preprocessing.py`, `plot_helpers.py`.
 
 ### Data conventions (stable)
 - Inputs: BrainVision `*.vhdr` (+ `*.eeg`/`*.vmrk`).
@@ -15,13 +15,18 @@ These instructions apply to everything under this directory tree.
 - Units: process in Volts; convert to microvolts (`* 1e6`) only for plots/summary numbers.
 
 ### Before writing any code
-1. Search for an existing function first.
-   - Prefer `rg -n "keyword" preprocessing.py plot_helpers.py util.py`.
-   - If a function exists, call it. Do not re-implement it in a new script.
-2. Read the closest reference script and follow its pattern exactly.
-   - Match: epoching/cropping, mask usage, channel picking, filter settings, naming, and I/O style.
-3. Modify the closest existing script instead of creating a new one.
-   - Add a new file only if there is a clear “new analysis” that cannot fit as a small extension.
+1. Read the relevant standards and latest decision context first.
+   - Start with `docs/standards/SKRIPT.md` and the latest relevant memo or `readme.md` entry.
+2. Search for reusable logic in the core modules.
+   - Prefer `rg -n "keyword" preprocessing.py plot_helpers.py`.
+   - Reuse a helper only when it is non-trivial, already validated, and clearer than short MNE-native code.
+   - Do not call a helper just because it exists.
+3. Read the closest reference script and follow the scientific pattern when the question matches.
+   - Match: windows, mask usage, channel picking, filter settings, naming, and I/O style.
+   - Do not copy unrelated structure that would make one script answer more than one question.
+4. Decide whether to extend an existing script or create a new one.
+   - Extend only if the script still answers one narrow question after the change.
+   - Otherwise split and create a new script.
 
 ### When writing code
 - Keep paths single-source and explicit.
@@ -33,69 +38,20 @@ These instructions apply to everything under this directory tree.
 - Prefer “core module” placement for reusable logic.
   - If it’s used in more than one script, it goes into `preprocessing.py` or `plot_helpers.py`.
   - Helpers added to core should have clear names and explicit units in the signature (e.g., `window_start_s`, `sampling_rate_hz`).
-- Naming rules (no comments required to understand the code).
+- Naming rules.
   - Use descriptive names: `stim_onsets_samples`, `epoch_time_seconds`, `main_cut_window_s`.
   - Avoid ambiguous names like `d2`, `tmp`, `x1` unless they are loop indices.
-- Code size guardrails (for new code you add).
-  - New standalone scripts: hard limit 70 lines; if you exceed, move logic into `preprocessing.py`.
-  - New helper functions: hard limit 40-100 lines; split if longer.
+- Naming alone is not enough where scientific choices matter.
+  - Add comments for why windows, bands, channels, thresholds, and helper calls are scientifically justified.
+- Analysis script size should follow `docs/standards/SKRIPT.md`.
+  - Typical target: about `70-150` lines.
+  - `300+` lines is not acceptable.
+  - If repeated mechanics push a script beyond that range, move those mechanics into `preprocessing.py` or `plot_helpers.py`.
 
-### Analysis script quality rules (high priority)
-- Prefer readable scripts over generic abstractions.
-  - The script must read top-to-bottom as one clear analysis story.
-  - Keep the main scientific logic inline if it is specific to this script and helps readability.
-  - Do not turn every transformation into a function.
-  - Extract a helper only if at least one of these is true:
-    - the code is reused or will clearly be reused
-    - the code is repetitive plumbing, not the scientific core
-    - keeping it inline would make the main script harder to follow
-- Required script layout.
-  - Use this order unless there is a strong reason not to:
-    1. fixed inputs / config
-    2. load data
-    3. channel selection
-    4. event or onset construction
-    5. epoch construction
-    6. shared preprocessing
-    7. averaging / metrics
-    8. plotting / saving
-    9. short printed summary
-- Comments are required and must be surgical.
-  - Use section headers for every major block.
-  - Add short comments for:
-    - why a hard-coded number exists
-    - what a non-obvious transformation is doing
-    - why a channel or timing choice is being used
-  - Do not add filler comments that restate obvious Python syntax.
-  - A good comment explains intent, not mechanics.
-- Hard-code fixed paradigm values unless there is a real need to vary them.
-  - Do not promote every timing constant into a top-level parameter.
-  - Keep only true edit points in the config block:
-    - input paths
-    - output directory
-    - fixed bad-channel list
-  - Fixed paradigm values may stay inline with a comment if they are stable for that script.
-  - Avoid parameter spam.
-- Keep repeated MNE construction compact.
-  - Repeated `mne.Epochs(...)` calls may be written on one line if the arguments are identical and this improves scanability.
-  - Prefer direct, compact construction over verbose multi-line boilerplate when nothing is gained from expansion.
-- What belongs in helpers.
-  - Reusable event-building logic belongs in `preprocessing.py`.
-  - Reusable plotting/layout logic belongs in `plot_helpers.py`.
-  - Script-specific onset detection, masking decisions, and one-off cleaning choices stay inline unless reuse is clear.
-- Forbidden patterns in final scripts.
-  - No notebook leftovers.
-  - No large commented-out code blocks.
-  - No stray debug calls like `plt.show()` unless the script is explicitly interactive.
-  - No unexplained magic numbers.
-  - No fallback branches, prompts, or auto-discovery.
-  - No dead experimental branches in the final saved script.
-- Quality bar before finishing.
-  - Check that the script is easy to read top-to-bottom.
-  - Check that comments explain all non-obvious hard-coded choices.
-  - Check that helper extraction is minimal and justified.
-  - Check that syntax compiles.
-  - If the task asked for a clean duplicate, leave the original exploratory script untouched.
+### Analysis script quality rules
+Follow `docs/standards/SKRIPT.md` for all analysis script rules (layout, naming, comments, forbidden patterns, checklist).
+- If any local rule in this file conflicts with `docs/standards/SKRIPT.md` for analysis-script design, follow `docs/standards/SKRIPT.md`.
+- This file should keep repo-specific constraints only: data conventions, paths, output layout, reusable-module placement, and reporting expectations.
 
 ### Output directory
 - Always write outputs into an explicit `output_directory` created via `mkdir(parents=True, exist_ok=True)`.
@@ -106,7 +62,7 @@ These instructions apply to everything under this directory tree.
   - `Lines: <approx added/modified> | Reused: <fn1(), fn2()> | New functions: <names or none> | Output: <dir or file>`
 
 ### Answer style rules (high priority)
-- Follow `ANSWER.md` for coding-related responses.
+- Follow `docs/standards/ANSWER.md` for coding-related responses.
 - Use that style for explanations, debugging, implementation guidance, and review responses.
 - Keep the repo-specific coding and script rules in this file as higher-order implementation constraints.
 - Prefer this response pattern by default:
@@ -114,5 +70,5 @@ These instructions apply to everything under this directory tree.
   - explain only what matters
   - show concrete code when relevant
   - end with verification, caveat, or next step
-- `ANSWER.md` governs response structure and tone, not code implementation behavior.
-- If `ANSWER.md` and `AGENTS.md` ever conflict, follow the repo-specific rules in `AGENTS.md`.
+- `docs/standards/ANSWER.md` governs response structure and tone, not code implementation behavior.
+- If `docs/standards/ANSWER.md` and `AGENTS.md` ever conflict, follow the repo-specific rules in `AGENTS.md`.

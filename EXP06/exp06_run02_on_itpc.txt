@@ -1,0 +1,56 @@
+exp06 run02 ON SSD ITPC export
+question=Does the selected ON-fitted SSD show an intensity-dependent GT-referenced ITPC course across run02 ON windows?
+stim_vhdr_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp06-STIM-iTBS_run02.vhdr
+excluded_channels=['Fp1', 'TP10', 'TP9']
+signal_band_hz=(11.951172, 12.951172)
+view_band_hz=(4.000000, 20.000000)
+reference_peak_hz=12.451172
+median_on_duration_s=1.922000
+median_off_duration_s=4.078000
+stim_threshold_fraction=0.080
+on_window_s=(0.300000, 1.500000)
+itpc_definition=Cross-epoch phase-locking between the selected SSD component and recorded GT after target-band filtering and Hilbert phase extraction.
+timing_figure=exp06_run02_on_timing.png
+export_npz=exp06_run02_on_itpc.npz
+selection_note=Each block fits SSD on run02 ON windows, then keeps the in-band component with the strongest GT-band coherence and peak-to-flank ratio; if none are in-band, it keeps the strongest-ranked component.
+
+10%
+event_count=20
+selected_component=1
+ssd_mean_gt_locking=0.966127
+selected_component_peak_hz=12.451172
+selected_component_coherence=0.618460
+selected_component_peak_ratio=1.348145
+
+20%
+event_count=20
+selected_component=2
+ssd_mean_gt_locking=0.979165
+selected_component_peak_hz=12.451172
+selected_component_coherence=0.662598
+selected_component_peak_ratio=14.181653
+
+30%
+event_count=20
+selected_component=2
+ssd_mean_gt_locking=0.969796
+selected_component_peak_hz=12.451172
+selected_component_coherence=0.566357
+selected_component_peak_ratio=6.583830
+
+40%
+event_count=20
+selected_component=2
+ssd_mean_gt_locking=0.500371
+selected_component_peak_hz=11.962891
+selected_component_coherence=0.234314
+selected_component_peak_ratio=0.674953
+
+50%
+event_count=20
+selected_component=2
+ssd_mean_gt_locking=0.623798
+selected_component_peak_hz=12.451172
+selected_component_coherence=0.392378
+selected_component_peak_ratio=0.974514
+

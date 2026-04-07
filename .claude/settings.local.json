@@ -5,7 +5,14 @@
       "Bash(find 'c:\\\\Users\\\\njeuk\\\\OneDrive\\\\Documents\\\\Charite Berlin\\\\TIMS' -maxdepth 1 -type f \\\\\\(-name README* -o -name readme* -o -name *.md \\\\\\))",
       "Bash(python analyses_artifact_exp05.py)",
       "Bash(python analyses_ssd_exp05.py)",
-      "Bash(python analyses_ica_topo_exp05.py)"
+      "Bash(python analyses_ica_topo_exp05.py)",
+      "Bash(ls -lh *.png)",
+      "Bash(python analyze_baseline_gt.py)",
+      "Bash(python compare_baseline_gt_exp05.py)",
+      "Bash(ls -lt \"c:/Users/njeuk/OneDrive/Documents/Charite Berlin/TIMS/explore_exp\"*.py)",
+      "Bash(ls -lt \"/c/Users/njeuk/OneDrive/Documents/Charite Berlin/TIMS/explore_exp\"*.py)",
+      "Bash(ls -lt \"C:/Users/njeuk/OneDrive/Documents/Charite Berlin/TIMS/\"explore_exp*.py)",
+      "Bash(find \"c:\\\\Users\\\\njeuk\\\\OneDrive\\\\Documents\\\\Charite Berlin\\\\TIMS\" -name \"*.py\" -type f -exec grep -l \"recovered_peak_hz\" {} \\\\;)"
     ]
   }
 }

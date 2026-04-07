@@ -1,0 +1,21 @@
+exp05 fc1 baseline-first ssd exploratory
+focus_channel=FC1
+candidate_channels=['FC1', 'P3', 'CP1', 'CP2']
+selection_mode=fallback_all_components
+gt_peak_frequency_hz=7.080078
+signal_band_hz=(6.580078, 7.580078)
+baseline_events=313
+events_30_on=63
+events_30_late_off=62
+selected_component=1
+selected_lambda=0.334864
+baseline_peak_frequency_hz=5.126953
+baseline_peak_ratio=0.800443
+baseline_coherence=0.002090
+baseline_plv=0.022409
+late_off_peak_frequency_hz=5.126953
+late_off_peak_ratio=0.554983
+late_off_coherence=0.301090
+late_off_plv=0.368383
+itpc_on_epochs=63
+itpc_off_epochs=62

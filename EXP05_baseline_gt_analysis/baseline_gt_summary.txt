@@ -1,0 +1,48 @@
+BASELINE GT ANALYSIS SUMMARY
+=============================
+
+Experiment: exp05 phantom cTBS baseline recording
+Analysis date: 2026-03-26
+Signal band: 6.0-8.0 Hz
+Late-OFF window: 1.5-2.5 s after offset
+
+RECORDING STATS
+===============
+Duration: 315.6 s
+EEG channels: 31
+Sampling rate: 1000.0 Hz
+
+LATE-OFF EPOCHS
+===============
+Number of epochs: 313
+Epoch duration: 1.000 s
+
+GT SIGNAL (BAND-FILTERED 6-8 Hz)
+=================================
+Temporal RMS: 0.0088 µV
+Peak-to-peak: 0.0250 µV
+PSD peak frequency: 6.84 Hz
+PSD peak power: 9.18e-05 V²/Hz
+
+EEG POWER IN SIGNAL BAND (6-8 Hz)
+==================================
+Best channel: CP1 (0.0000 µV RMS)
+Worst channel: C3 (0.0000 µV RMS)
+Mean across all channels: 0.0000 µV RMS
+Std across channels: 0.0000 µV RMS
+
+TOP 5 CHANNELS BY RMS
+=====================
+1. CP1: 0.0000 µV
+2. Fp2: 0.0000 µV
+3. FT10: 0.0000 µV
+4. O2: 0.0000 µV
+5. Oz: 0.0000 µV
+
+FIGURES SAVED
+=============
+fig1_gt_temporal_profile.png - GT mean waveform ± 1 SD
+fig2_psd_comparison.png - GT vs EEG power spectrum
+fig3_topomap_rms.png - RMS per channel (scalp distribution)
+fig4_psd_heatmap.png - Channel × Frequency PSD heatmap
+fig5_top_channels_temporal.png - Temporal profiles of best 5 channels

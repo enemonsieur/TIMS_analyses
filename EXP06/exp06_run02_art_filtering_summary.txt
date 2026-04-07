@@ -1,0 +1,46 @@
+exp06 run02 artifact filtering summary
+stim_vhdr_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp06-STIM-iTBS_run02.vhdr
+weights_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP06\exp06_baseline_ssd_component1_weights.npz
+signal_band_hz=(12.000000, 13.000000)
+view_band_hz=(4.000000, 20.000000)
+baseline_peak_hz=12.451172
+focus_channel=O2
+median_on_duration_s=1.922000
+median_off_duration_s=4.078000
+stim_threshold_fraction=0.080
+run02_note=run02 contains five measured dose blocks; the final block contributes 19 late-OFF windows because the recording ends after the last ON block.
+
+10%
+event_count=20
+raw_mean_itpc=0.997338
+ssd_mean_itpc=0.998332
+ssd_minus_raw_itpc=0.000994
+recovered_peak_hz=12.451172
+
+20%
+event_count=20
+raw_mean_itpc=0.997475
+ssd_mean_itpc=0.998953
+ssd_minus_raw_itpc=0.001479
+recovered_peak_hz=12.451172
+
+30%
+event_count=20
+raw_mean_itpc=0.997831
+ssd_mean_itpc=0.999249
+ssd_minus_raw_itpc=0.001419
+recovered_peak_hz=12.451172
+
+40%
+event_count=20
+raw_mean_itpc=0.997705
+ssd_mean_itpc=0.999353
+ssd_minus_raw_itpc=0.001648
+recovered_peak_hz=12.451172
+
+50%
+event_count=19
+raw_mean_itpc=0.998539
+ssd_mean_itpc=0.999526
+ssd_minus_raw_itpc=0.000987
+recovered_peak_hz=12.451172

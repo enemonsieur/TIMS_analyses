@@ -1,0 +1,127 @@
+exp06 baseline channel qc
+baseline_vhdr_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp06-baseline-gt_12hz_noSTIM_run01.vhdr
+baseline_duration_s=321.180000
+sampling_rate_hz=1000.000000
+eeg_channel_count=28
+excluded_channels=['Fp1', 'TP10', 'TP9']
+view_start_s=2.000000
+view_stop_s=22.000000
+selected_view_stop_s=7.000000
+view_band_hz=[1.000000, 40.000000]
+notch_hz=50.000000
+average_psd_frequency_min_hz=0.976562
+average_psd_frequency_max_hz=39.550781
+selected_timecourse_channels=['O2', 'P8', 'Oz', 'O1', 'P4', 'CP6']
+top_mean_abs_channels=['O2', 'P8', 'Oz']
+
+channels_sorted_by_std_uv_desc
+O2: std_uv=2.420 mean_abs_uv=2.086 peak_abs_uv=7.059 mean_psd_v2_hz=1.382411e-13
+P8: std_uv=2.241 mean_abs_uv=1.928 peak_abs_uv=6.073 mean_psd_v2_hz=1.211408e-13
+Oz: std_uv=1.983 mean_abs_uv=1.637 peak_abs_uv=7.064 mean_psd_v2_hz=8.314469e-14
+O1: std_uv=1.949 mean_abs_uv=1.463 peak_abs_uv=10.850 mean_psd_v2_hz=5.839597e-14
+P4: std_uv=1.635 mean_abs_uv=1.342 peak_abs_uv=5.903 mean_psd_v2_hz=6.003754e-14
+CP6: std_uv=1.437 mean_abs_uv=1.183 peak_abs_uv=5.033 mean_psd_v2_hz=4.792006e-14
+T8: std_uv=1.400 mean_abs_uv=1.140 peak_abs_uv=5.342 mean_psd_v2_hz=4.361805e-14
+Pz: std_uv=1.266 mean_abs_uv=1.025 peak_abs_uv=4.390 mean_psd_v2_hz=3.398025e-14
+CP1: std_uv=1.250 mean_abs_uv=0.942 peak_abs_uv=5.616 mean_psd_v2_hz=3.261949e-14
+Cz: std_uv=1.229 mean_abs_uv=0.957 peak_abs_uv=6.441 mean_psd_v2_hz=2.553742e-14
+CP2: std_uv=1.225 mean_abs_uv=0.979 peak_abs_uv=5.278 mean_psd_v2_hz=3.232785e-14
+P7: std_uv=1.201 mean_abs_uv=0.928 peak_abs_uv=6.099 mean_psd_v2_hz=2.642298e-14
+P3: std_uv=1.178 mean_abs_uv=0.947 peak_abs_uv=4.453 mean_psd_v2_hz=2.948467e-14
+FT10: std_uv=1.155 mean_abs_uv=0.929 peak_abs_uv=4.150 mean_psd_v2_hz=2.788652e-14
+F7: std_uv=1.101 mean_abs_uv=0.878 peak_abs_uv=3.789 mean_psd_v2_hz=2.548806e-14
+F4: std_uv=1.083 mean_abs_uv=0.855 peak_abs_uv=4.520 mean_psd_v2_hz=2.126623e-14
+C4: std_uv=1.078 mean_abs_uv=0.853 peak_abs_uv=4.022 mean_psd_v2_hz=2.417662e-14
+FC2: std_uv=1.074 mean_abs_uv=0.857 peak_abs_uv=3.573 mean_psd_v2_hz=2.153942e-14
+FC6: std_uv=1.057 mean_abs_uv=0.838 peak_abs_uv=3.783 mean_psd_v2_hz=2.203603e-14
+Fp2: std_uv=1.047 mean_abs_uv=0.826 peak_abs_uv=3.883 mean_psd_v2_hz=2.271360e-14
+CP5: std_uv=1.039 mean_abs_uv=0.801 peak_abs_uv=4.233 mean_psd_v2_hz=2.125395e-14
+F8: std_uv=0.976 mean_abs_uv=0.772 peak_abs_uv=3.392 mean_psd_v2_hz=1.881831e-14
+F3: std_uv=0.973 mean_abs_uv=0.760 peak_abs_uv=3.712 mean_psd_v2_hz=1.867675e-14
+C3: std_uv=0.957 mean_abs_uv=0.746 peak_abs_uv=3.778 mean_psd_v2_hz=1.804990e-14
+FC5: std_uv=0.955 mean_abs_uv=0.741 peak_abs_uv=3.681 mean_psd_v2_hz=1.722198e-14
+FC1: std_uv=0.949 mean_abs_uv=0.745 peak_abs_uv=3.572 mean_psd_v2_hz=1.971461e-14
+T7: std_uv=0.934 mean_abs_uv=0.728 peak_abs_uv=3.623 mean_psd_v2_hz=1.656504e-14
+FT9: std_uv=0.000 mean_abs_uv=0.000 peak_abs_uv=0.000 mean_psd_v2_hz=1.903547e-33
+
+average_psd_v2_hz_by_frequency
+0.976562 Hz: mean_psd_v2_hz=5.546469e-13
+1.464844 Hz: mean_psd_v2_hz=1.250365e-13
+1.953125 Hz: mean_psd_v2_hz=4.917232e-14
+2.441406 Hz: mean_psd_v2_hz=2.678167e-14
+2.929688 Hz: mean_psd_v2_hz=1.850553e-14
+3.417969 Hz: mean_psd_v2_hz=1.647902e-14
+3.906250 Hz: mean_psd_v2_hz=1.584582e-14
+4.394531 Hz: mean_psd_v2_hz=1.223488e-14
+4.882812 Hz: mean_psd_v2_hz=1.258787e-14
+5.371094 Hz: mean_psd_v2_hz=1.272423e-14
+5.859375 Hz: mean_psd_v2_hz=1.443257e-14
+6.347656 Hz: mean_psd_v2_hz=1.321393e-14
+6.835938 Hz: mean_psd_v2_hz=1.299816e-14
+7.324219 Hz: mean_psd_v2_hz=8.730280e-15
+7.812500 Hz: mean_psd_v2_hz=8.981178e-15
+8.300781 Hz: mean_psd_v2_hz=7.897306e-15
+8.789062 Hz: mean_psd_v2_hz=6.832321e-15
+9.277344 Hz: mean_psd_v2_hz=8.206406e-15
+9.765625 Hz: mean_psd_v2_hz=1.080905e-14
+10.253906 Hz: mean_psd_v2_hz=1.249365e-14
+10.742188 Hz: mean_psd_v2_hz=9.367727e-15
+11.230469 Hz: mean_psd_v2_hz=9.620893e-15
+11.718750 Hz: mean_psd_v2_hz=1.294213e-14
+12.207031 Hz: mean_psd_v2_hz=6.027938e-13
+12.695312 Hz: mean_psd_v2_hz=8.501135e-13
+13.183594 Hz: mean_psd_v2_hz=3.840471e-14
+13.671875 Hz: mean_psd_v2_hz=7.961713e-15
+14.160156 Hz: mean_psd_v2_hz=7.230737e-15
+14.648438 Hz: mean_psd_v2_hz=7.657466e-15
+15.136719 Hz: mean_psd_v2_hz=7.944707e-15
+15.625000 Hz: mean_psd_v2_hz=7.078210e-15
+16.113281 Hz: mean_psd_v2_hz=9.764818e-15
+16.601562 Hz: mean_psd_v2_hz=9.838941e-15
+17.089844 Hz: mean_psd_v2_hz=8.637644e-15
+17.578125 Hz: mean_psd_v2_hz=9.303547e-15
+18.066406 Hz: mean_psd_v2_hz=6.322595e-15
+18.554688 Hz: mean_psd_v2_hz=8.828826e-15
+19.042969 Hz: mean_psd_v2_hz=8.717177e-15
+19.531250 Hz: mean_psd_v2_hz=8.843047e-15
+20.019531 Hz: mean_psd_v2_hz=8.511538e-15
+20.507812 Hz: mean_psd_v2_hz=6.857487e-15
+20.996094 Hz: mean_psd_v2_hz=6.573069e-15
+21.484375 Hz: mean_psd_v2_hz=6.548964e-15
+21.972656 Hz: mean_psd_v2_hz=9.928660e-15
+22.460938 Hz: mean_psd_v2_hz=9.213839e-15
+22.949219 Hz: mean_psd_v2_hz=6.306042e-15
+23.437500 Hz: mean_psd_v2_hz=8.130776e-15
+23.925781 Hz: mean_psd_v2_hz=9.076158e-15
+24.414062 Hz: mean_psd_v2_hz=8.214382e-15
+24.902344 Hz: mean_psd_v2_hz=9.559738e-15
+25.390625 Hz: mean_psd_v2_hz=8.533474e-15
+25.878906 Hz: mean_psd_v2_hz=8.129281e-15
+26.367188 Hz: mean_psd_v2_hz=9.171273e-15
+26.855469 Hz: mean_psd_v2_hz=9.982669e-15
+27.343750 Hz: mean_psd_v2_hz=9.684273e-15
+27.832031 Hz: mean_psd_v2_hz=9.053008e-15
+28.320312 Hz: mean_psd_v2_hz=9.981619e-15
+28.808594 Hz: mean_psd_v2_hz=1.211715e-14
+29.296875 Hz: mean_psd_v2_hz=8.431312e-15
+29.785156 Hz: mean_psd_v2_hz=1.056717e-14
+30.273438 Hz: mean_psd_v2_hz=9.298369e-15
+30.761719 Hz: mean_psd_v2_hz=7.465140e-15
+31.250000 Hz: mean_psd_v2_hz=7.278092e-15
+31.738281 Hz: mean_psd_v2_hz=1.012754e-14
+32.226562 Hz: mean_psd_v2_hz=1.404632e-14
+32.714844 Hz: mean_psd_v2_hz=1.069815e-14
+33.203125 Hz: mean_psd_v2_hz=8.159816e-15
+33.691406 Hz: mean_psd_v2_hz=7.310054e-15
+34.179688 Hz: mean_psd_v2_hz=7.532903e-15
+34.667969 Hz: mean_psd_v2_hz=1.027612e-14
+35.156250 Hz: mean_psd_v2_hz=9.177857e-15
+35.644531 Hz: mean_psd_v2_hz=7.783527e-15
+36.132812 Hz: mean_psd_v2_hz=9.866098e-15
+36.621094 Hz: mean_psd_v2_hz=8.041320e-15
+37.109375 Hz: mean_psd_v2_hz=6.884785e-15
+37.597656 Hz: mean_psd_v2_hz=7.019917e-15
+38.085938 Hz: mean_psd_v2_hz=9.687496e-15
+38.574219 Hz: mean_psd_v2_hz=8.526406e-15
+39.062500 Hz: mean_psd_v2_hz=7.721108e-15
+39.550781 Hz: mean_psd_v2_hz=6.482410e-15

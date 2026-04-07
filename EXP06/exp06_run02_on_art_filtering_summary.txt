@@ -1,0 +1,79 @@
+exp06 run02 ON artifact filtering summary
+question=Does run02 ON-fitted SSD stay spectrally valid across intensities before GT-locking is interpreted?
+stim_vhdr_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp06-STIM-iTBS_run02.vhdr
+focus_channel=O2
+excluded_channels=['Fp1', 'TP10', 'TP9']
+signal_band_hz=(11.951172, 12.951172)
+view_band_hz=(4.000000, 20.000000)
+reference_peak_hz=12.451172
+median_on_duration_s=1.922000
+median_off_duration_s=4.078000
+stim_threshold_fraction=0.080
+on_window_s=(0.300000, 1.500000)
+gt_locking_definition=Mean of the cross-epoch phase-locking curve after band-pass filtering GT and EEG in the target band and computing Hilbert phase differences.
+peak_normalized_psd_definition=mean Welch PSD across matched epochs in 4-20 Hz, divided by that spectrum's own maximum.
+peak_normalized_psd_pseudocode_1=epochs -> Welch PSD per epoch inside the view band
+peak_normalized_psd_pseudocode_2=epoch PSDs -> mean_psd across epochs
+peak_normalized_psd_pseudocode_3=mean_psd / max(mean_psd) -> peak-normalized mean PSD
+on_fit_note=The run02 ON-fitted SSD is spectrally in-band in 4 of 5 run02 ON blocks.
+selection_note=Each block fits SSD on run02 ON windows, then keeps the in-band component with the strongest GT-band coherence and peak-to-flank ratio.
+
+10%
+event_count=20
+selected_component=1
+raw_mean_gt_locking=0.843027
+ssd_mean_gt_locking=0.966127
+ssd_minus_raw_gt_locking=0.123099
+recovered_peak_hz=12.695312
+selected_component_peak_hz=12.451172
+selected_component_coherence=0.618460
+selected_component_peak_ratio=1.348145
+recovered_peak_in_band=1
+
+20%
+event_count=20
+selected_component=2
+raw_mean_gt_locking=0.909672
+ssd_mean_gt_locking=0.979165
+ssd_minus_raw_gt_locking=0.069493
+recovered_peak_hz=12.695312
+selected_component_peak_hz=12.451172
+selected_component_coherence=0.662598
+selected_component_peak_ratio=14.181653
+recovered_peak_in_band=1
+
+30%
+event_count=20
+selected_component=2
+raw_mean_gt_locking=0.940519
+ssd_mean_gt_locking=0.969796
+ssd_minus_raw_gt_locking=0.029277
+recovered_peak_hz=12.695312
+selected_component_peak_hz=12.451172
+selected_component_coherence=0.566357
+selected_component_peak_ratio=6.583830
+recovered_peak_in_band=1
+
+40%
+event_count=20
+selected_component=2
+raw_mean_gt_locking=0.995982
+ssd_mean_gt_locking=0.500371
+ssd_minus_raw_gt_locking=-0.495611
+recovered_peak_hz=12.695312
+selected_component_peak_hz=11.962891
+selected_component_coherence=0.234314
+selected_component_peak_ratio=0.674953
+recovered_peak_in_band=1
+
+50%
+event_count=20
+selected_component=2
+raw_mean_gt_locking=0.999522
+ssd_mean_gt_locking=0.623798
+ssd_minus_raw_gt_locking=-0.375724
+recovered_peak_hz=11.718750
+selected_component_peak_hz=12.451172
+selected_component_coherence=0.392378
+selected_component_peak_ratio=0.974514
+recovered_peak_in_band=0

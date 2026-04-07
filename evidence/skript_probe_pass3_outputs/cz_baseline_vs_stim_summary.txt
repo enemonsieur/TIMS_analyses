@@ -1,0 +1,11 @@
+Cz baseline vs stim probe
+baseline_duration_s=334.379
+stim_duration_s=394.759
+window_start_s=0.000
+window_stop_s=20.000
+baseline_window_mean_uv=0.039631
+stim_window_mean_uv=0.578614
+baseline_window_std_uv=3.926044
+stim_window_std_uv=756.508774
+baseline_psd_peak_hz=10.000000
+stim_psd_peak_hz=1.000000
