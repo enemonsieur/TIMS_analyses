@@ -1,0 +1,19 @@
+SNR-BASED COMPONENT SELECTION RESULTS
+======================================================================
+Raw: Same channel (selected at 10%) applied to all intensities
+SASS: Best SNR-selected SASS channel per intensity
+SSD: Best SNR-selected SSD component per intensity
+
+Intensity | Raw SNR | Raw PLV | SASS SNR | SASS PLV | SSD SNR | SSD PLV
+----------------------------------------------------------------------
+10%        | 3.4195  | 0.7105  | 2.6106   | 0.9667   | 3.9626  | 0.9358 
+20%        | 4.2520  | 0.7311  | 8.2481   | 0.9734   | 6.3607  | 0.9503 
+30%        | 0.2148  | 0.4561  | 0.3707   | 0.2620   | 4.0890  | 0.9853 
+40%        | 0.0006  | 0.7544  | 4.5828   | 0.8570   | 2.2310  | 0.1818 
+50%        | 0.0008  | 0.7425  | 5.1655   | 0.8716   | 4.4657  | 0.5050 
+
+======================================================================
+EXPECTED PATTERN (if SNR selection is correct):
+Raw:  SNR declines monotonically as intensity increases (artifact dominates)
+SASS: SNR more stable (artifact suppression), slower decline
+SSD:  SNR most stable (spectral optimization preserves signal)

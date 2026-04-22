@@ -1,0 +1,22 @@
+SNR-BASED COMPONENT SELECTION ANALYSIS MANIFEST
+======================================================================
+Data: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp06-STIM-iTBS_run02.vhdr
+Selection method: SNR = power(12.45 Hz ± 0.5 Hz) / power(4-20 Hz)
+Raw: Locked at 10% (P8), applied to all intensities
+SASS/SSD: Adaptive per intensity
+
+Intensity | Raw PLV | SASS PLV | SSD PLV | STIM PLV
+----------------------------------------------------------------------
+10%        |  0.7105 |   0.9667 |  0.9358 |   0.9522
+20%        |  0.7311 |   0.9734 |  0.9503 |   0.8307
+30%        |  0.4561 |   0.2620 |  0.9853 |   0.8610
+40%        |  0.7544 |   0.8570 |  0.1818 |   0.8571
+50%        |  0.7425 |   0.8716 |  0.5050 |   0.8365
+
+======================================================================
+Component selections:
+10%: Raw=P8, SASS=Fp2, SSD=comp0
+20%: Raw=P8, SASS=P8, SSD=comp0
+30%: Raw=P8, SASS=F3, SSD=comp0
+40%: Raw=P8, SASS=Pz, SSD=comp2
+50%: Raw=P8, SASS=T8, SSD=comp1

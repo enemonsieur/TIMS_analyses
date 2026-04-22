@@ -1,0 +1,189 @@
+================================================================================
+                QUICK REFERENCE: CORRECTED EXP06 PIPELINE
+================================================================================
+
+THREE PROBLEMS → THREE SOLUTIONS
+
+PROBLEM 1: Raw Channel Changes Per Intensity
+OLD:  10% → Channel A    20% → Channel B   ... (different at each dose)
+      ✗ Can't distinguish artifact from spatial drift
+
+NEW:  10% → Channel A    20% → Channel A   ... (same channel everywhere)
+      ✓ PLV changes = artifact contamination (clean interpretation)
+
+SCRIPT: explore_exp06_best_raw_channel_fixed.py
+OUTPUT: exp06_run02_fixed_raw_channel_metadata.json
+
+---
+
+PROBLEM 2: SASS + Hidden SSD
+OLD:  SASS cleanup → eigendecomp (SSD) → rank by power_ratio
+      ✗ Hybrid method; two decompositions in one path
+
+NEW:  SASS cleanup → rank all channels by PLV
+      ✓ Pure SASS; consistent metric with other paths
+
+LOCATION: Section 3.5 in analyze_*_CORRECTED.py
+CHANGE: Remove lines 249–287, add channel ranking by PLV
+
+---
+
+PROBLEM 3: SSD Ranked by Proxy Metric
+OLD:  SSD components ranked by power_ratio (artifact suppression proxy)
+      ✗ Indirect metric; inconsistent with raw path
+
+NEW:  SSD components ranked by PLV (direct GT phase locking)
+      ✓ Direct metric; consistent across all paths
+
+LOCATION: Section 3.6 in analyze_*_CORRECTED.py
+CHANGE: Replace power_ratio ranking with PLV ranking (~15 lines)
+
+================================================================================
+                            EXECUTION WORKFLOW
+================================================================================
+
+STEP 1: Find and Lock Raw Channel at 10%
+python explore_exp06_best_raw_channel_fixed.py
+Duration: ~2 minutes
+Output: metadata.json, summary.txt, overlay.png
+
+    ↓ (provides metadata.json)
+
+STEP 2: Run Corrected Main Analysis
+python analyze_exp06_run02_on_raw_sass_ssd_plv_CORRECTED.py
+Duration: ~5 minutes
+Output: summary.txt (CORRECTED), figures (CORRECTED)
+
+    ↓
+TOTAL TIME: ~7 minutes
+
+================================================================================
+                      THE KEY CHANGE IN ONE PICTURE
+================================================================================
+
+SELECTION METRICS COMPARISON
+
+OLD (Asymmetric)              NEW (Symmetric)
+Raw:  max PLV        ────→    Raw:  max PLV (fixed)
+SASS: min power_ratio         SASS: max PLV
+SSD:  min power_ratio         SSD:  max PLV
+
+✗ Can't compare              ✓ Fair comparison
+
+================================================================================
+                       EXPECTED RESULT PATTERN
+================================================================================
+
+PLV vs Intensity
+
+1.0 ─┐                      GT-STIM (always ~1.0)
+     │                      (reference upper bound)
+0.9 ─┤    ┌──────────────────────────
+     │    │
+0.8 ─┤    ├─ SASS
+     │    │    └──────────┐
+0.7 ─┤    ├─ SSD         └──┐
+     │    │                  │
+0.6 ─┤    ├─ Raw (fixed) ────┴──┐
+     │    │                      │
+0.5 ─┤    │  Artifact contaminates all
+     │    │
+0.4 ─┤    │
+     │    │
+0.3 ─┴────┴──────────────────────────
+        10%  20%  30%  40%  50%
+        Stimulation Intensity
+
+Expected:
+- Raw:    Monotonic decrease (artifact)
+- SASS:   ≥ Raw at 10–30%, drops at 40–50%
+- SSD:    Peaks when signal dominates, drops when artifact dominates
+- STIM:   Flat at 1.0 (always locked to itself)
+
+================================================================================
+                         VALIDATION CHECKLIST
+================================================================================
+
+After running both scripts:
+
+□ metadata.json contains correct channel name from 10%
+□ Raw overlay shows SAME channel at all 5 intensities
+□ Raw PLV is constant or decreasing (makes sense)
+□ SASS PLV ≥ Raw at 10%–30%
+□ SSD PLV follows expected trend
+□ GT-STIM PLV ≈ 1.0 across all intensities
+□ Peak frequencies shift smoothly (no artifacts)
+□ Results differ from original in expected ways
+□ Both scripts complete without errors
+
+================================================================================
+                        WHERE IS WHAT? FILE GUIDE
+================================================================================
+
+Quick orientation               → START_HERE.md
+How to run scripts              → README_CORRECTED_PIPELINE.md
+What changed & why              → SUMMARY_pipeline_corrections.md
+Deep methodology                → MEMO_EXP06_pipeline_analysis.md
+Code comparison (old vs new)    → VISUAL_COMPARISON_old_vs_new.md
+High-level design               → PLAN_correct_sass_ssd_separation.md
+Detailed pseudocode             → PSEUDOCODE_exp06_run02_fixed_*.md
+Complete file inventory         → INDEX_all_corrections.md
+Troubleshooting                 → README_CORRECTED_PIPELINE.md
+Expected results                → README_CORRECTED_PIPELINE.md
+
+================================================================================
+                           THE 3 KEY CHANGES
+================================================================================
+
+CHANGE 1: Raw Channel (Section 3.4)
+  From: best_ch = argmax(PLV) per intensity
+  To:   Load fixed_ch from metadata, use everywhere
+  Why:  Isolates artifact effect without spatial confounding
+
+CHANGE 2: SASS (Section 3.5)
+  From: SASS → eigendecomp → rank by power_ratio
+  To:   SASS → rank all channels by PLV
+  Why:  Pure SASS; consistent metric
+
+CHANGE 3: SSD (Section 3.6)
+  From: eigendecomp → top-6 → rank by power_ratio
+  To:   eigendecomp → top-6 → rank by PLV
+  Why:  Direct metric; consistent across all paths
+
+================================================================================
+                          STATUS & NEXT STEPS
+================================================================================
+
+COMPLETED:
+  ✅ Voice note analyzed
+  ✅ Three problems identified
+  ✅ Solutions designed (pseudocode)
+  ✅ Two scripts written (860 total lines)
+  ✅ Nine documents created (40 pages)
+  ✅ This quick reference
+
+READY TO RUN:
+  ⏳ Both scripts (no dependencies except metadata.json)
+  ⏳ Execute checklist above
+
+NEXT:
+  1. Read START_HERE.md (5 min)
+  2. Run both scripts (7 min)
+  3. Validate outputs (checklist above)
+  4. Compare with original results
+  5. Update project memo
+
+TOTAL TIME: ~20 minutes (reading + execution + validation)
+
+================================================================================
+                                STATUS
+================================================================================
+
+PLANNING:      ✅ COMPLETE
+DESIGN:        ✅ COMPLETE
+CODING:        ✅ COMPLETE
+DOCUMENTATION: ✅ COMPLETE
+VALIDATION:    ⏳ PENDING (run scripts, check outputs)
+DEPLOYMENT:    ⏳ PENDING (after validation)
+
+READY FOR: User testing and validation

@@ -2,18 +2,57 @@
 
 Use this guide for analysis scripts in this repo. The target is code a human can read once and understand without opening helper internals.
 
-## 1. Before You Write
+## 1. Before You Write: Validate the Approach First
 
-- Ask `3-7` short questions before writing a new analysis script.
-- Before writing, judge how mature the analysis is and choose a script style that fits that stage.
-- Early exploration should stay simple and inspection-first.
-- Later analysis can justify more custom logic and more selective outputs.
-- Use those questions to lock:
-  - the single goal
-  - the windows / conditions
-  - the outputs
-  - whether the script is exploratory or closer to a final report
-- Do not guess these if they affect interpretation.
+**Always present the pseudo-code skeleton before writing real code—even if not asked.**
+
+1. Ask `3-7` short questions to clarify:
+   - the single goal
+   - the windows / conditions
+   - the outputs
+   - whether the script is exploratory or closer to a final report
+
+2. **Write the pseudo-code high-level sketch inline in the conversation** (not in a document):
+   - Show the pipeline overview (visual box drawing)
+   - Show the main algorithm steps (numbered sections)
+   - Show expected inputs/outputs at each step
+   - Keep it brief (5-10 lines of structure)
+
+3. **Ask the user to validate** before proceeding:
+   - "Does this approach match what you want?"
+   - "Should we change the order / skip any steps?"
+   - "Are the outputs what you expected?"
+
+4. **Only after validation:** write the full pseudo-code + real script.
+
+**Why:** A misaligned skeleton catches errors early. If the approach is wrong, you stop before wasting effort on full implementation.
+
+## 1.5 High-Level Sketch Example (for chat validation)
+
+When proposing a new script, show the skeleton briefly (inline):
+
+```
+GOAL: Identify best raw channel via phase locking; compare raw vs. cleaned paths.
+
+PIPELINE:
+  1. Load VHDR + extract stim/GT/EEG (250 Hz)
+  2. Detect blocks → build ON-window event array
+  3. Loop per block: band-pass 12 Hz → Hilbert phase → PLV per channel
+  4. Select best channel at 10%, lock for 20–50%
+  5. Extract & concatenate cycles, visualize overlays
+  
+OUTPUT: 
+  - summary.txt (PLV per channel × intensity)
+  - overlay.png (5-panel figure: channel vs GT)
+
+QUESTIONS:
+  - Lock channel, or reselect per intensity?
+  - Compare vs. cleaned channels (SASS/SSD) in same script, or separate?
+```
+
+**Wait for validation before writing full pseudo-code.**
+
+---
 
 ## 2. Core Rules
 
@@ -173,7 +212,7 @@ Before implementing the final script, write a skeleton that is mostly pseudo-cod
 
 - the one-line question
 - the config block
-- a simple workflow sketch
+- a **data flow diagram** showing the transformation path
 - actual function names you expect to use
 - short local comments around non-obvious transformations
 - plots at the end, marked as parameter validation or final reporting
@@ -184,17 +223,20 @@ unless that detail is needed to explain the data flow or the scientific choice.
 
 Rules for this skeleton:
 
-- show the major stages as a simple vertical workflow sketch
-- use arrows only to show the main flow, not to document every object
-- avoid full input/output prose unless the representation is unusual or easy to miss
-- if a transformation is obvious, keep the comment short; if the representation changes, explain the change locally
-- if you read only the workflow sketch and structure comments, you should still recover the full pipeline
-- code may use literal channel names; comments should translate them once into plain language when needed
-- do not hide short logic in helpers during the skeleton
-- if a step would be about `3-6` straightforward lines inline, write it inline in the skeleton
-- use a helper only if the logic is genuinely non-trivial, already validated, and reused
-- when reusing a non-trivial helper, add a `1-3` line comment saying what it hides and why it is justified here
-- keep the main scientific transform visible in the skeleton; do not hide the core comparison, selection rule, or recovery metric inside one opaque helper
+- **Start with a data flow diagram** (lines showing transformations with arrows and boxes)
+- **Use subsection markers to create visual hierarchy:**
+  - `# ════════════════════` = major section (1, 2, 3...). Single blank line above, readers see these as waypoints
+  - `# ══ 1.1 Substep ══` = logical substep within a section. Grouped without blank lines; belong to parent
+  - Skip `# 1.1.1` level; instead, use an inline comment before the code block if needed
+- **Only mark representation changes** (seconds → samples, continuous → events, channel space → component space) with an arrow comment: `# → type and shape, what it's used for`
+- **Comment only non-obvious steps**. Obvious boilerplate (imports, directory creation, standard MNE loads) gets no comment
+- **If you read only the subsection headers and arrow comments, you should still recover the pipeline**
+- **For helper calls: one short comment on what it hides and what it returns**, not a detailed explanation. The reader should trust that `apply_saved_ssd(...)` does what its name says
+- **Do not separate "INPUT / OPERATION / OUTPUT" as explicit labels**; instead, show them naturally:
+  - Input enters the function call
+  - Comment with `→ type` shows what comes back
+  - Next function uses that output
+- Keep helper calls visible; do not hide the core comparison, selection rule, or recovery metric inside one opaque helper
 
 Helper examples:
 
@@ -224,76 +266,96 @@ view_band_hz = (4.0, 20.0)  # PSD display band
 stim_threshold = 0.08  # weak-block recovery
 
 
-# ============================================================
-# PIPELINE
-# ============================================================
-# raw EEG
-#   |
-# timing recovery
-#   |
-# valid ON windows
-#   |
-# SSD transfer
-#   |
-# metrics and outputs
+# ════════════════════════════════════════════════════════════════════════════
+# PIPELINE OVERVIEW (before pseudo-code, visualize the workflow)
+# ════════════════════════════════════════════════════════════════════════════
+#
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║               RAW VHDR → TIMING → WINDOWS → METRICS                     ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+#
+# VHDR Recording (22 EEG + stim + GT, 250 Hz, ~120 s)
+# ├─ Extract: stim timing trace + GT reference
+# │
+# ├─ Detect: stimulus blocks via stim_trace edge detection
+# │  └─ OUTPUT: (n_blocks,) sample indices [onset, offset]
+# │
+# ├─ Window: shift into ON segment (0.3–1.5 s post-stimulus)
+# │  └─ OUTPUT: (n_events, 3) MNE-style event array
+# │
+# ├─ Epoch: fixed-length windows per event, apply SSD filter
+# │  └─ OUTPUT: (n_epochs, 22, n_samples) raw, (n_epochs, n_comp, n_samples) SSD
+# │
+# ├─ Loop per block: band-pass 12 Hz → Hilbert phase → PLV per channel
+# │  └─ OUTPUT: plv_by_intensity[intensity][channel] = [plv_per_cycle]
+# │
+# ├─ Select: best channel at 10%, lock for 20%–50% (prevents spatial drift confusion)
+# │
+# └─ Visualize: overlays (channel vs GT) + summary table per intensity
+#
+#
+# EXPECTED BEHAVIOR:
+# - 10–20%: PLV near 1.0 (excellent sync, minimal artifact)
+# - 30%:    PLV ~0.93 (slight artifact contamination)
+# - 40–50%: PLV 0.70–0.85 (strong artifact, path-dependent recovery)
 
 
-# ============================================================
-# 1) LOAD RUN02 DATA
-# ============================================================
-# 1.1 Read BrainVision file
+# ════════════════════════════════════════════════════════════════════════════
+# 1) LOAD & PREPARE
+# ════════════════════════════════════════════════════════════════════════════
+
+# ══ 1.1 Read recording ══
 raw = mne.io.read_raw_brainvision(str(stim_path), preload=True, verbose=False)
-
-# 1.2 Pull timing traces
+# → MNE Raw: (22 EEG, stim, GT) @ 250 Hz, ~120 s
 sfreq = float(raw.info["sfreq"])
-stim_trace = raw.copy().pick(["stim"]).get_data()[0]  # stim channel voltage trace
-gt_trace = raw.copy().pick(["ground_truth"]).get_data()[0]  # recorded GT voltage trace
 
-# 1.3 Load saved SSD
-ssd_artifact = load_saved_weights(weights_path)  # saved SSD metadata dict
-eeg_names = ssd_artifact["channel_names"]  # saved EEG channel list
-ssd_filter = ssd_artifact["selected_filter"]  # saved SSD spatial weights
+# ══ 1.2 Extract timing & reference traces ══
+stim_trace = raw.copy().pick(["stim"]).get_data()[0]      # (n_samples,) voltage on stim
+gt_trace = raw.copy().pick(["ground_truth"]).get_data()[0]  # (n_samples,) recorded GT signal
+# These drive: block detection (stim) and phase reference (GT)
+
+# ══ 1.3 Load SSD weights (pre-trained spatial filter) ══
+ssd_artifact = load_saved_weights(weights_path)
+eeg_names = ssd_artifact["channel_names"]          # list of EEG channel names
+ssd_filter = ssd_artifact["selected_filter"]       # (n_ch, n_comp) pre-trained weights
+# → No retraining; fixed linear combinations applied to each epoch
 
 
-# ============================================================
-# 2) RECOVER ON TIMING
-# ============================================================
-# 2.1 Detect ON blocks
-# The first block is weaker, so this
-# threshold is part of the timing rule.
+# ════════════════════════════════════════════════════════════════════════════
+# 2) DETECT STIMULUS BLOCKS & BUILD WINDOWS
+# ════════════════════════════════════════════════════════════════════════════
+
+# ══ 2.1 Find block onsets and offsets ══
 block_onsets, block_offsets = detect_stim_blocks(
-    stim_trace,
-    sfreq,
-    threshold_fraction=stim_threshold,
+    stim_trace, sfreq, threshold_fraction=stim_threshold
 )
+# → (n_blocks,) sample indices where stim pulses start/end
+# First block is weaker; threshold parameter accounts for this
 
-# 2.2 Convert window length
-# Seconds -> integer samples for slicing.
-window_len = on_window_s[1] - on_window_s[0]
-window_size = int(round(window_len * sfreq))
-start_shift = int(round(on_window_s[0] * sfreq))
+# ══ 2.2 Convert time window to sample counts ══
+# Seconds → samples. Needed for array slicing below.
+window_len = on_window_s[1] - on_window_s[0]              # 1.2 s
+window_size = int(round(window_len * sfreq))              # 1.2 s × 250 Hz = 300 samples
+start_shift = int(round(on_window_s[0] * sfreq))          # 0.3 s × 250 Hz = 75 samples
+
+# ══ 2.3 Shift block onsets into physiological ON window ══
+# Add offset (0.3 s) to move from stim pulse edge to meaningful recording window
+window_onsets = block_onsets + start_shift                # candidate starts in samples
+# → (n_blocks,) sample indices
+
+# Keep only complete windows (those that fit entirely inside blocks)
+window_keep = window_onsets + window_size <= block_offsets  # boolean mask
+event_samples = window_onsets[window_keep]                  # filtered start indices
+events_on = build_event_array(event_samples)                # → MNE-style (n_events, 3)
 
 
-# ============================================================
-# 3) BUILD VALID WINDOWS
-# ============================================================
-# 3.1 Shift into ON segment
-window_onsets = block_onsets + start_shift  # candidate window start samples
+# ════════════════════════════════════════════════════════════════════════════
+# 3) EPOCH DATA & APPLY SSD
+# ════════════════════════════════════════════════════════════════════════════
 
-# keep complete windows
-window_keep = window_onsets + window_size <= block_offsets  # valid-window boolean mask
-event_samples = window_onsets[window_keep]  # accepted start sample array
-events_on = build_event_array(event_samples)  # MNE-style event array
-
-
-# ============================================================
-# 4) APPLY SAVED SSD
-# ============================================================
-# 4.1 Epoch and project SSD
-# raw.copy().pick(eeg_names) -> retained EEG raw.
-# This helper builds view-band epochs,
-# then projects the saved SSD filter
-# onto each accepted ON window.
+# ══ 3.1 Build epochs and project saved SSD filter ══
+# Helper: bands raw (view_band), builds epochs, applies pre-trained SSD spatial
+# weights to each. Transformation: (n_epochs, 22, n_samples) → (n_epochs, n_comp, n_samples)
 epochs_view, ssd_epochs = apply_saved_ssd(
     raw.copy().pick(eeg_names),
     events_on,
@@ -301,44 +363,100 @@ epochs_view, ssd_epochs = apply_saved_ssd(
     view_band_hz,
     window_len,
 )
-# epochs_view -> view-band epoch object.
-# ssd_epochs -> SSD epoch matrix.
+# → epochs_view: (n_epochs, 22, 300) raw EEG, view-band filtered @ 4–20 Hz
+# → ssd_epochs: (n_epochs, n_comp, 300) SSD components, view-band filtered
 
-# 4.2 Pull comparison signals
-raw_epochs = epochs_view.copy().pick(["O2"]).get_data()[:, 0, :]  # raw O2 epoch matrix
-gt_epochs = extract_event_windows(
-    gt_trace,
-    events_on[:, 0],
-    window_size,
-)  # GT epoch matrix
+# ══ 3.2 Extract reference signals for comparison ══
+raw_epochs = epochs_view.copy().pick(["O2"]).get_data()[:, 0, :]
+# → (n_epochs, 300) raw O2 channel epochs
+gt_epochs = extract_event_windows(gt_trace, events_on[:, 0], window_size)
+# → (n_epochs, 300) GT reference epochs (recorded ground truth signal)
 
 
-# ============================================================
-# 5) COMPUTE SUMMARIES
-# ============================================================
-# 5.1 Compute GT locking
-# raw_epochs / gt_epochs -> matched epoch matrices.
-# This helper converts band-limited
-# signal and GT epochs into a phase-
-# consistency curve for block summary.
-raw_metrics = compute_band_metrics(
-    raw_epochs,
-    gt_epochs,
-    sfreq,
-    signal_band_hz,
-)
+# ════════════════════════════════════════════════════════════════════════════
+# 4) COMPUTE PHASE LOCKING & PSD
+# ════════════════════════════════════════════════════════════════════════════
 
-# 5.2 Compute PSD summary
-# Use matched-epoch mean PSD so the
-# comparison stays at block level.
-psd_freqs, raw_psd = compute_mean_psd(
-    raw_epochs,
-    sfreq,
-    view_band_hz,
-)
+# ══ 4.1 Compute PLV (phase locking value) ══
+# Band-pass raw & GT to target (12 Hz), compute instantaneous phase via Hilbert
+# transform, then measure phase consistency: PLV = |mean(exp(i*phase_diff))|.
+# PLV ∈ [0, 1]: 1 = perfect sync, 0 = no consistent phase relation.
+raw_metrics = compute_band_metrics(raw_epochs, gt_epochs, sfreq, signal_band_hz)
+# → dict: 'plv' (scalar 0–1, higher = better recovery)
+#         'epoch_scores' (per-epoch PLV values for variability check)
+
+# ══ 4.2 Compute power spectrum (artifact detection) ══
+# Mean Welch PSD across all epochs in view band (4–20 Hz).
+# Peak at 12 Hz indicates signal present; broadband elevation indicates artifact.
+psd_freqs, raw_psd = compute_mean_psd(raw_epochs, sfreq, view_band_hz)
+# → psd_freqs: (n_freqs,) frequency axis in Hz
+# → raw_psd: (n_freqs,) power in µV²/Hz
 ```
 
 Use this template as a drafting tool. The final script can be shorter than this skeleton, but it should still read in the same order: each output becomes the next input.
+
+### Comment Strategy in Template Skeleton
+
+**Four comment levels, brief and purposeful:**
+
+**Level 1: Pipeline overview** (before code)
+- Box drawing showing major steps and data flow direction
+- Readers see the workflow before diving into code
+- Includes what each step does and why
+
+**Level 2: Major section headers** (`# ════ 1) LOAD & PREPARE ════`)
+- Broad algorithm phases
+- One blank line above
+- Readers navigate code by these waypoints
+
+**Level 3: Substep labels** (`# ══ 1.1 Read recording ══`)
+- Logical substeps within section
+- Grouped without blank lines; belongs to parent
+- One phrase only
+
+**Level 4: Inline comments (3 types):**
+
+a) **Arrow comments** (`# →`) — show data shape/type at decision points:
+```python
+block_onsets, block_offsets = detect_stim_blocks(...)
+# → (n_blocks,) sample indices where stim pulses start/end
+```
+
+b) **Explanatory comments** (1–3 sentences) — appear before complex transformations to explain the logic:
+```python
+# Seconds → samples. Needed for array slicing below.
+window_size = int(round(window_len * sfreq))
+```
+
+c) **Guiding comments** (5–10 words) — appear inline on non-obvious operations:
+```python
+# Add offset (0.3 s) to move from stim pulse edge to meaningful recording window
+window_onsets = block_onsets + start_shift
+```
+
+**What NOT to do:**
+```python
+# Read the VHDR file from disk. This loads the raw EEG data along with
+# stim and GT traces. We suppress warnings about missing channel positions.
+raw = mne.io.read_raw_brainvision(str(stim_path), preload=True, verbose=False)
+# This returns an MNE Raw object which we will use in the next step
+# to extract the stim and GT traces for timing purposes.
+```
+
+**Better:**
+```python
+# ══ 1.1 Read recording ══
+raw = mne.io.read_raw_brainvision(str(stim_path), preload=True, verbose=False)
+# → MNE Raw: (22 EEG, stim, GT) @ 250 Hz, ~120 s
+sfreq = float(raw.info["sfreq"])
+```
+
+**Readers should be able to:**
+- Skim the pipeline overview and understand what the script does
+- Scan section headers (`# ══ ...`) and recover the full analysis flow
+- Read inline comments on complex lines and understand why that step exists
+- Trust function names; don't need explanatory prose around them
+- Jump to any section and understand what data enters and leaves
 
 ## 4. MNE First, Helpers Second
 

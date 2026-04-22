@@ -1,0 +1,119 @@
+exp06 run02 ON raw vs SASS source vs SSD PLV summary
+question=Which run02 ON representation stays most GT-locked across intensity when raw, SASS source, and SSD all select their representations supervised by direct GT-locking (PLV), and GT-STIM is kept as a reference?
+stim_vhdr_path=C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp06-STIM-iTBS_run02.vhdr
+excluded_channels=['Fp1', 'TP10', 'TP9']
+signal_band_hz=(11.951172, 12.951172)
+view_band_hz=(4.000000, 20.000000)
+reference_peak_hz=12.451172
+on_window_s=(0.300000, 1.500000)
+late_off_window_s=(1.500000, 3.200000)
+top_channel_count=1
+stim_threshold_fraction=0.080
+raw_selection=rank all raw EEG channels by direct PLV with ground truth in the 12.45 Hz band; keep the highest-locking channel (same supervised selection as SASS source and SSD).
+sass_selection=fit SASS in the 4-20 Hz view band using this block's ON covariance against its measured late-OFF covariance; then decompose the artifact-suppressed signal via generalized eigendecomposition (ON vs late-OFF covariance in 12.45 Hz band); rank components by direct PLV with ground truth and keep the highest-locking synthetic source.
+ssd_selection=fit SSD (generalized eigendecomposition) on the accepted ON windows of each block, maximizing signal-band variance relative to view-band; rank all components by direct PLV with ground truth and keep the highest-locking component.
+plv_definition=band-pass signal and GT into the 12.45 Hz target band, sample the wrapped phase difference once per GT cycle inside each epoch, then compute PLV from those cycle samples.
+summary_note=raw, SASS source, and SSD are each summarized by one highest-GT-locking channel/component per block (all supervised by direct PLV).
+summary_figure=exp06_run02_on_raw_sass_ssd_plv_summary.png
+phase_grid=exp06_run02_on_raw_sass_ssd_phase_grid.png
+
+10%
+event_count=20
+raw_selected_channels=O1
+raw_selected_peaks_hz=5.000000
+raw_selected_plv=0.716370
+raw_selection_note=GT-locking supervised (PLV)
+raw_mean_selected_plv=0.716370
+raw_best_channel=O1
+raw_best_channel_plv=0.716370
+sass_source_component=5
+sass_peak_hz=5.000000
+sass_plv=0.974611
+sass_mean_gt_locking=0.962134
+ssd_component=1
+ssd_peak_hz=12.500000
+ssd_plv=0.964226
+ssd_mean_gt_locking=0.929468
+stim_plv=0.952171
+stim_mean_gt_locking=0.996147
+
+20%
+event_count=20
+raw_selected_channels=O1
+raw_selected_peaks_hz=10.000000
+raw_selected_plv=0.467330
+raw_selection_note=GT-locking supervised (PLV)
+raw_mean_selected_plv=0.467330
+raw_best_channel=O1
+raw_best_channel_plv=0.467330
+sass_source_component=17
+sass_peak_hz=12.500000
+sass_plv=0.973371
+sass_mean_gt_locking=0.979377
+ssd_component=1
+ssd_peak_hz=12.500000
+ssd_plv=0.932429
+ssd_mean_gt_locking=0.949324
+stim_plv=0.830723
+stim_mean_gt_locking=0.999621
+
+30%
+event_count=20
+raw_selected_channels=O1
+raw_selected_peaks_hz=10.000000
+raw_selected_plv=0.960383
+raw_selection_note=GT-locking supervised (PLV)
+raw_mean_selected_plv=0.960383
+raw_best_channel=O1
+raw_best_channel_plv=0.960383
+sass_source_component=24
+sass_peak_hz=5.000000
+sass_plv=0.262025
+sass_mean_gt_locking=0.256395
+ssd_component=2
+ssd_peak_hz=12.500000
+ssd_plv=0.960238
+ssd_mean_gt_locking=0.966791
+stim_plv=0.860990
+stim_mean_gt_locking=0.999729
+
+40%
+event_count=20
+raw_selected_channels=O1
+raw_selected_peaks_hz=10.000000
+raw_selected_plv=0.963090
+raw_selection_note=GT-locking supervised (PLV)
+raw_mean_selected_plv=0.963090
+raw_best_channel=O1
+raw_best_channel_plv=0.963090
+sass_source_component=12
+sass_peak_hz=12.500000
+sass_plv=0.862394
+sass_mean_gt_locking=0.893487
+ssd_component=2
+ssd_peak_hz=12.500000
+ssd_plv=0.353213
+ssd_mean_gt_locking=0.435342
+stim_plv=0.857127
+stim_mean_gt_locking=0.999789
+
+50%
+event_count=20
+raw_selected_channels=O1
+raw_selected_peaks_hz=10.000000
+raw_selected_plv=0.958950
+raw_selection_note=GT-locking supervised (PLV)
+raw_mean_selected_plv=0.958950
+raw_best_channel=O1
+raw_best_channel_plv=0.958950
+sass_source_component=22
+sass_peak_hz=12.500000
+sass_plv=0.871604
+sass_mean_gt_locking=0.887190
+ssd_component=4
+ssd_peak_hz=5.000000
+ssd_plv=0.766768
+ssd_mean_gt_locking=0.756879
+stim_plv=0.836520
+stim_mean_gt_locking=0.998966
+

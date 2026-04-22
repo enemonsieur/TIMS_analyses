@@ -288,6 +288,90 @@ def save_gt_locking_with_peak_summary_figure(
     plt.close(figure)
 
 
+def save_plv_method_summary_figure(
+    x_values,
+    event_counts,
+    method_series,
+    output_path,
+    title,
+    ylabel="GT-referenced PLV",
+):
+    """Save one multi-method PLV summary figure across stimulation blocks."""
+    figure, axis = plt.subplots(figsize=(9.8, 4.8), constrained_layout=True)
+    y_arrays = []
+    for series in method_series:
+        y_values = np.asarray(series["values"], dtype=float)
+        y_arrays.append(y_values)
+        axis.plot(
+            x_values,
+            y_values,
+            color=series["color"],
+            lw=series.get("linewidth", 2.0),
+            marker="o",
+            ms=6,
+            label=series["label"],
+        )
+
+    stacked_values = np.vstack(y_arrays)
+    for x_value, highest_value, event_count in zip(
+        x_values,
+        np.max(stacked_values, axis=0),
+        np.asarray(event_counts, dtype=int),
+        strict=True,
+    ):
+        axis.text(
+            x_value,
+            min(0.985, float(highest_value) + 0.03),
+            f"n={event_count}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+    axis.set(
+        xlabel="Run02 stimulation block (%)",
+        ylabel=ylabel,
+        xticks=x_values,
+        ylim=(0.0, 1.02),
+        title=title,
+    )
+    axis.legend(frameon=False, loc="lower right")
+    style_clean_axis(axis, grid_alpha=0.15)
+    figure.savefig(output_path, dpi=220)
+    plt.close(figure)
+
+
+def save_phase_histogram_grid(
+    phase_grid_rows,
+    output_path,
+    title,
+    n_columns=4,
+):
+    """Save one polar phase-histogram grid with one row per intensity."""
+    figure, axes = plt.subplots(
+        len(phase_grid_rows),
+        n_columns,
+        figsize=(12.0, 15.5),
+        constrained_layout=True,
+        subplot_kw={"projection": "polar"},
+    )
+    axes = np.atleast_2d(axes)
+    for row_axes, panel_row in zip(axes, phase_grid_rows, strict=True):
+        if len(panel_row) != n_columns:
+            raise ValueError("Each phase-grid row must contain the requested number of columns.")
+        for axis, panel in zip(row_axes, panel_row, strict=True):
+            circplot(
+                axis,
+                np.asarray(panel["phases"], dtype=float),
+                float(panel["plv"]),
+                float(panel["p_value"]),
+                panel["title"],
+                panel["color"],
+            )
+    figure.suptitle(title, fontsize=14, fontweight="bold")
+    figure.savefig(output_path, dpi=220)
+    plt.close(figure)
+
+
 def save_peak_normalized_psd_panel_figure(
     panels,
     signal_band_hz,

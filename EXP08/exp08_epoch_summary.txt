@@ -1,0 +1,57 @@
+================================================================================
+EXP08: EPOCH EXTRACTION BY INTENSITY SUMMARY
+================================================================================
+
+Recording: exp08-STIM-pulse_run01_10-100.vhdr
+Duration: 1025.7 s
+Sampling rate: 1000 Hz
+EEG channels: 28
+Total pulses detected: 200
+
+Dose-response protocol:
+  Intensity levels: 10 (10–100%)
+  Pulses per level: 20
+  Inter-pulse interval: 5.0 s
+
+ON window definition:
+  Start: -0.50 s (pre-pulse baseline)
+  End: 1.0 s post-pulse onset
+  Duration: 1.5 s (1500 samples)
+  Pulse onset: at t=0 (center of window)
+
+Late-OFF window definition (noise reference):
+  Start: 1.5 s post-pulse onset
+  End: 3.2 s post-pulse onset
+  Duration: 1.7 s
+  Purpose: covariance reference for SASS/SSD (free of stimulus artifact)
+
+Per-intensity epoch counts:
+--------------------------------------------------------------------------------
+Intensity    Valid Epochs    Output Files                            
+--------------------------------------------------------------------------------
+10%          20              *10pct_on-epo.fif, *10pct_lateoff-epo.fif
+20%          20              *20pct_on-epo.fif, *20pct_lateoff-epo.fif
+30%          20              *30pct_on-epo.fif, *30pct_lateoff-epo.fif
+40%          20              *40pct_on-epo.fif, *40pct_lateoff-epo.fif
+50%          20              *50pct_on-epo.fif, *50pct_lateoff-epo.fif
+60%          20              *60pct_on-epo.fif, *60pct_lateoff-epo.fif
+70%          20              *70pct_on-epo.fif, *70pct_lateoff-epo.fif
+80%          20              *80pct_on-epo.fif, *80pct_lateoff-epo.fif
+90%          20              *90pct_on-epo.fif, *90pct_lateoff-epo.fif
+100%          20              *100pct_on-epo.fif, *100pct_lateoff-epo.fif
+--------------------------------------------------------------------------------
+TOTAL        200            
+--------------------------------------------------------------------------------
+
+Excluded channels: TP9, TP10, Fp1
+Pulse detection threshold: 8% of max stim amplitude
+
+Output files generated per intensity:
+  exp08_epochs_*pct_on-epo.fif (ON window: -0.1 to +0.5 s)
+  exp08_epochs_*pct_lateoff-epo.fif (late-OFF window: 1.5 to 3.2 s)
+  exp08_gt_epochs_*pct_on-epo.fif (GT reference, ON window)
+  exp08_gt_epochs_*pct_lateoff-epo.fif (GT reference, late-OFF window)
+
+Additional output:
+  exp08_block_timing_by_intensity.png (timing visualization)
+  exp08_epoch_summary.txt (this file)

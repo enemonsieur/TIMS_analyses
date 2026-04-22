@@ -1,0 +1,18 @@
+BEST RAW CHANNELS (ITPC ~ 100%) -- EXP06 RUN02 ON-WINDOW SYNC CHECK
+================================================================================
+Target frequency: 12.451 Hz (band: 11.95–12.95 Hz)
+ON window: 0.3–1.5 s post-onset
+Per-intensity cycles: 20
+
+Intensity | Best Channel | Mean PLV  | Qualitative Sync Check
+--------------------------------------------------------------------------------
+10%        | F4           | 0.9303   | See plot panel
+20%        | F4           | 0.8445   | See plot panel
+30%        | F4           | 0.8634   | See plot panel
+40%        | F4           | 0.8594   | See plot panel
+50%        | F4           | 0.8495   | See plot panel
+
+INTERPRETATION:
+- High ITPC (>0.95) indicates phase-locked recovery in best raw channel.
+- Overlay plot shows whether GT and best channel oscillations align visually.
+- Expected: 10–30% show clean sync; 40–50% may show phase drift or artifact artifact.

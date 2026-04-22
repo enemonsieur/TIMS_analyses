@@ -1,0 +1,113 @@
+================================================================================
+SNR vs PLV COMPARISON: The Selection Paradox Explained
+================================================================================
+
+HYPOTHESIS: SNR-based selection should correlate with PLV (phase locking).
+REALITY: They often diverge, especially at high intensities.
+
+================================================================================
+Table 1: SNR of Selected Components (SNR-based selection metric)
+================================================================================
+
+Intensity    Raw SNR    SASS SNR    SSD SNR
+────────────────────────────────────────────
+10%          3.4195     2.6106      3.9626  ← Good SNR across the board
+20%          4.2520     8.2481      6.3607  ← Excellent SNR, peaks at 20%
+30%          0.2148     0.3707      4.0890  ← Raw/SASS collapse; SSD holds
+40%          0.0006     4.5828      2.2310  ← Raw crashes; SASS recovers; SSD picks comp2 (not comp0)
+50%          0.0008     5.1655      4.4657  ← Raw crashes; SASS strong; SSD picks comp1
+────────────────────────────────────────────
+
+INTERPRETATION:
+- Raw: SNR collapses at 40–50% because 12.45 Hz target band loses power to 10 Hz artifact
+- SASS: SNR IMPROVES at 40–50% because artifact is already removed; selection still sees clean signal
+- SSD: SNR stays moderate (2–4) but WHICH COMPONENT is selected changes (comp0 → comp2 → comp1)
+
+
+================================================================================
+Table 2: PLV of Selected Components (What we actually care about)
+================================================================================
+
+Intensity    Raw PLV    SASS PLV    SSD PLV
+────────────────────────────────────────────
+10%          0.7105     0.9667      0.9358  ← All methods good; SSD phase-locked
+20%          0.7311     0.9734      0.9503  ← Raw lags; SASS/SSD excellent
+30%          0.4561     0.2620      0.9853  ← Raw/SASS both degraded; SSD PEAKS
+40%          0.7544     0.8570      0.1818  ← Raw surprisingly good; SSD CRASHES ← PARADOX
+50%          0.7425     0.8716      0.5050  ← Raw surprises again; SSD moderate
+────────────────────────────────────────────
+
+INTERPRETATION:
+- 10–20%: SNR and PLV are aligned (good SNR = good phase lock)
+- 30%: Divergence begins (SASS SNR drops but ITPC calms down; SSD SNR stays high and PLV peaks)
+- 40–50%: Complete MISALIGNMENT
+  * Raw: SNR ≈ 0 but PLV ≈ 0.74–0.75 (artifact-contaminated but happens to stay in phase)
+  * SSD: SNR ≈ 2–4 but PLV ≈ 0.18–0.50 (high SNR in the wrong component = random phase)
+  * SASS: SNR ≈ 4–5 and PLV ≈ 0.86–0.87 (stays aligned because artifact removed FIRST)
+
+
+================================================================================
+Table 3: Why Each Method Behaves Differently (The Root Cause)
+================================================================================
+
+METHOD      SNR Metric Sensed?     PLV Status          Why the Divergence?
+────────────────────────────────────────────────────────────────────────────
+Raw         12.45 Hz power ratio   Ground truth phase  At 40%+, artifact shifts to 10 Hz.
+(locked)                           vs epoch            SNR metric stops seeing signal (looks
+                                                       at 12.45 only), but residual noise in
+                                                       12.45 band still phase-locked by luck.
+
+SASS        12.45 Hz on cleaned    Phase of SASS       SASS removes artifact BEFORE SNR metric
+(adaptive)  data (artifact          output vs GT        works. Remaining 12.45 Hz power is
+            already removed)                            real signal or clean noise. SNR
+                                                        selection picks good phases.
+
+SSD         12.45 Hz power in      Phase of selected   At 40%+, comp0 (best for signal) gets
+(adaptive)  selected component     component vs GT     buried under 10 Hz artifact. SNR metric
+                                                       now prefers comp2 (has residual 12.45
+                                                       Hz energy, but in wrong phase space).
+
+
+================================================================================
+Table 4: All SSD Component SNRs at 40% (Why comp2 was selected)
+================================================================================
+
+Component   SNR         PLV (if selected)   Status
+────────────────────────────────────────────────
+comp0       1.3948      ?                   Best SSD signal filter; buried under artifact
+comp1       0.5150      ?                   Moderate
+comp2       2.2310      0.1818              ← SELECTED (highest SNR); random phase w/ GT
+comp3       1.1318      ?                   Moderate
+comp4       0.7788      ?                   Low
+comp5       0.7054      ?                   Low
+
+WHY: comp2 happened to have the strongest 12.45 Hz power at 40%, but that power is NOT
+coherent with the GT signal. It's a "clean" spectral peak that SNR-ranking prefers, but
+PLV ignores it (random phase). Meanwhile, comp0 (the real signal filter) has 1.39 SNR
+(lower) but would have better phase coherence underneath the artifact.
+
+
+================================================================================
+CONCLUSION: The Paradox
+================================================================================
+
+SNR-based selection works ONLY AFTER artifact removal (SASS path).
+
+Without artifact removal, SNR selection is blind to:
+  - Whether the 12.45 Hz power is signal or artifact
+  - Whether that power is phase-coherent with ground truth
+  - Spectral migration (target band power moving to 10 Hz)
+
+At 40–50%:
+  ✓ SASS: SNR selection succeeds because artifact is gone first
+  ✗ SSD: SNR selection fails because it picks a component with high narrowband power
+         but low phase coherence (comp2 instead of comp0)
+  ✗ Raw: SNR metric collapses, but phase locking by accident still good
+
+
+RECOMMENDATION:
+Use ITPC (inter-trial phase coherence) or PLV as the selection metric for raw/SSD,
+not SNR. SNR should only be used AFTER spatial filtering (like SASS) has removed
+the artifact source.
+
+================================================================================

@@ -1,0 +1,21 @@
+ARTIFACT PHASE LOCKING ANALYSIS: Is STIM Phase-Locked to GT?
+======================================================================
+Target frequency: 12.451 Hz (band: 11.95–12.95 Hz)
+ON window: 0.3–1.5 s post-onset
+
+Intensity | Mean ITPC | Interpretation
+----------------------------------------------------------------------
+10%        | 0.9894    | High phase lock (artifact is coherent)
+20%        | 0.9969    | High phase lock (artifact is coherent)
+30%        | 0.9991    | High phase lock (artifact is coherent)
+40%        | 0.9992    | High phase lock (artifact is coherent)
+50%        | 0.9987    | High phase lock (artifact is coherent)
+
+INTERPRETATION:
+- ITPC ≈ 1.0: STIM and GT phases track perfectly (highly correlated signals)
+- ITPC ≈ 0.5: Partial phase locking (mixed behavior)
+- ITPC ≈ 0.0: No phase locking (random phase relationship)
+
+KEY INSIGHT:
+If ITPC(STIM vs GT) is high, artifact and GT are phase-coherent.
+This explains why extracted signals lock to both equally well.

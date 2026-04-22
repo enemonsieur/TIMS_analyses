@@ -1,0 +1,28 @@
+EXP07 Pulse Onset Detection & Epoch Creation
+=============================================
+
+Input: exp07-STIM-iTBS_run02_mod100pct.vhdr
+Duration: 1238.2 s
+Sampling rate: 1000.0 Hz
+EEG channels: 31
+
+Reference channel: CP2 (polyfit slope = -1.800625e-09 V/sample)
+
+Pulse onset detection:
+  First onset: 11.32 s (sample 11322)
+  Threshold: 25.0 µV above 300 ms baseline
+
+ON/OFF window geometry:
+  ON duration: 2.0 s (2000 samples)
+  OFF duration: 4.0 s (4000 samples)
+  Cycle: 6000 samples
+
+Epochs:
+  Total blocks: 204
+  First block onset: 11.32 s
+  Last block onset: 1229.32 s
+
+Outputs:
+  - 01_ref_channel_detrending.png
+  - 02_pulse_onset_detection.png
+  - exp07_epochs-epo.fif

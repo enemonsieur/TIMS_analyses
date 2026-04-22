@@ -61,14 +61,4 @@ Follow `docs/standards/SKRIPT.md` for all analysis script rules (layout, naming,
 - Include a short accounting line:
   - `Lines: <approx added/modified> | Reused: <fn1(), fn2()> | New functions: <names or none> | Output: <dir or file>`
 
-### Answer style rules (high priority)
-- Follow `docs/standards/ANSWER.md` for coding-related responses.
-- Use that style for explanations, debugging, implementation guidance, and review responses.
-- Keep the repo-specific coding and script rules in this file as higher-order implementation constraints.
-- Prefer this response pattern by default:
-  - answer first
-  - explain only what matters
-  - show concrete code when relevant
-  - end with verification, caveat, or next step
-- `docs/standards/ANSWER.md` governs response structure and tone, not code implementation behavior.
-- If `docs/standards/ANSWER.md` and `AGENTS.md` ever conflict, follow the repo-specific rules in `AGENTS.md`.
+

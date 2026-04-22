@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<prompt>
+  <metadata>
+    <task>Create joint TEP triptych from EXP04 stimulus condition data</task>
+    <context>Phantom study analyzing brain signal during TMS stimulation</context>
+    <previous_approach>EXP04 couldnt make a good image</previous_approach>
+  </metadata>
+
+  <problem_statement>
+    <issue>Current approach fails to follow import structure for EXP04 data</issue>
+    <constraint>EXP04 has 1 stim file to use for this, splitted into pre and post-stim conditions</constraint>
+    <requirement>Adapt <exp04_tep_joint_triptych class="png">the TEP plot</exp04_tep_joint_triptych> triptych logic to work with 1 stimulus data file</requirement>
+  </problem_statement>
+
+  <approach>
+    <strategy name="image_stacking_pipeline">
+      <step_1>
+        <description>Generate 2 plot_joint figures (pre_stim, post_stim)</description>
+        <inputs>
+          <input_data>evoked responses for each condition</input_data>
+          <parameters>
+            <param name="labels">pre, post</param>
+            <param name="output_format">PNG </param>
+          </parameters>
+        </inputs>
+        <key_logic>Define title, output metric, and labels before plotting</key_logic>
+      </step_1>
+
+      <step_2>
+        <description>Load and pad images to equal width</description>
+        <implementation>
+          <read_images>Use matplotlib.image.imread() to load PNG files</read_images>
+          <padding>
+            <calculate>max_width = max(img.shape[1] for img in imgs)</calculate>
+            <pad_all>For each image, pad right side to match max_width</pad_all>
+            <padding_value>Determine from image dtype: 1.0 for float, 255 for uint8</padding_value>
+          </padding>
+        </implementation>
+      </step_2>
+
+      <step_3>
+        <description>Vertically stack padded images</description>
+        <implementation>
+          <stack>Use np.vstack() to combine all images</stack>
+          <output>Single combined image array</output>
+        </implementation>
+      </step_3>
+
+      <step_4>
+        <description>Create figure and render stacked image</description>
+        <implementation>
+          <calculate_size>
+            <height_inches>combined.shape[0] / dpi</height_inches>
+            <width_inches>combined.shape[1] / dpi</width_inches>
+          </calculate_size>
+          <figure>plt.figure(figsize=(width, height), dpi=220)</figure>
+          <render>ax.imshow(combined) and save</render>
+        </implementation>
+      </step_4>
+    </strategy>
+  </approach>
+
+  <implementation_checklist>
+    <step status="pending">
+      <task>Understand how EXP04 stimulus data is structured (nested pre/post within stim)</task>
+      <action>Examine raw_stim structure and extract pre_stim and post_stim subsets</action>
+    </step>
+    <step status="pending">
+      <task>Adapt data loading to EXP04 format</task>
+      <action>Load stimulus condition, partition into pre_stim and post_stim windows</action>
+    </step>
+    <step status="pending">
+      <task>Apply TEP pipeline (baseline, crop, filter, decay removal)</task>
+      <action>Replicate EXP04 logic on all 2 evoked responses</action>
+    </step>
+    <step status="pending">
+      <task>Generate two plot_joint figures</task>
+      <action>Save pre_stim, post_stim, plots with consistent styling</action>
+    </step>
+    <step status="pending">
+      <task>Stack images vertically with padding</task>
+      <action>Implement image loading, padding, and stacking logic</action>
+    </step>
+    <step status="pending">
+      <task>Test and verify output</task>
+      <action>Run script, check triptych visual alignment and quality</action>
+    </step>
+  </implementation_checklist>
+
+  <validation>
+    <test_1>Verify all 2 images pad to same width</test_1>
+    <test_2>Confirm stacked image renders without distortion</test_2>
+    <test_3>Check that padding color matches image background cleanly</test_3>
+    <test_4>Validate output PNG dimensions are correct</test_4>
+  </validation>
+
+</prompt>

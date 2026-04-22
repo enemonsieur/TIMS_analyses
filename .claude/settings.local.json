@@ -12,7 +12,10 @@
       "Bash(ls -lt \"c:/Users/njeuk/OneDrive/Documents/Charite Berlin/TIMS/explore_exp\"*.py)",
       "Bash(ls -lt \"/c/Users/njeuk/OneDrive/Documents/Charite Berlin/TIMS/explore_exp\"*.py)",
       "Bash(ls -lt \"C:/Users/njeuk/OneDrive/Documents/Charite Berlin/TIMS/\"explore_exp*.py)",
-      "Bash(find \"c:\\\\Users\\\\njeuk\\\\OneDrive\\\\Documents\\\\Charite Berlin\\\\TIMS\" -name \"*.py\" -type f -exec grep -l \"recovered_peak_hz\" {} \\\\;)"
+      "Bash(find \"c:\\\\Users\\\\njeuk\\\\OneDrive\\\\Documents\\\\Charite Berlin\\\\TIMS\" -name \"*.py\" -type f -exec grep -l \"recovered_peak_hz\" {} \\\\;)",
+      "Bash(python explore_exp06_tep_joint_triptych.py)",
+      "Bash(python analyze_exp06_run02_snr_selection_plots.py)",
+      "Bash(python explore_exp08_art_filtering.py)"
     ]
   }
 }

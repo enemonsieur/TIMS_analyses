@@ -1,0 +1,36 @@
+GT vs STIM RELATIONSHIP ANALYSIS
+======================================================================
+
+10%:
+  Correlation: -0.0545
+  Amplitude ratio (STIM / GT): 0.0007
+  GT peak: 12.50 Hz | STIM peak: 12.42 Hz
+
+20%:
+  Correlation: -0.0205
+  Amplitude ratio (STIM / GT): 0.0023
+  GT peak: 12.50 Hz | STIM peak: 12.46 Hz
+
+30%:
+  Correlation: 0.0547
+  Amplitude ratio (STIM / GT): 0.0039
+  GT peak: 12.50 Hz | STIM peak: 12.42 Hz
+
+40%:
+  Correlation: 0.0409
+  Amplitude ratio (STIM / GT): 0.0058
+  GT peak: 12.50 Hz | STIM peak: 12.17 Hz
+
+50%:
+  Correlation: 0.0741
+  Amplitude ratio (STIM / GT): 0.0073
+  GT peak: 12.50 Hz | STIM peak: 12.17 Hz
+
+======================================================================
+INTERPRETATION:
+
+Correlation near 1.0 = GT and STIM are essentially the same signal
+Correlation near 0.0 = GT and STIM are independent
+
+If corr > 0.95: GT is likely DERIVED FROM STIM (hardware feedback loop)
+If corr < 0.5: Phase locking is due to external timing, not signal copying

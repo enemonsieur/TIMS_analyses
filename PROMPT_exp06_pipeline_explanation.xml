@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<analysis_request>
+  <context>
+    EXP06 phantom study. Three signal processing pipelines were applied to ON-state EEG
+    to recover a 12.45 Hz ground-truth (GT) signal during transcranial stimulation.
+    The goal is to understand what transformations were applied at each step,
+    what decisions were made, and what signals were ultimately compared in the figures.
+  </context>
+
+  <pipeline_overview>
+    <input>
+      Raw multichannel EEG from stimulation recording (exp06-STIM-iTBS_run02.vhdr).
+      ON-state windows: 0.3–1.5 s after stimulation onset (per 20 cycles per intensity block).
+      Late-OFF reference windows: 1.5–3.2 s after stimulation offset.
+    </input>
+
+    <signal_path id="A" label="Raw selected channel">
+      <step order="1">Bandpass filter all EEG channels into signal band (11.95–12.95 Hz)</step>
+      <step order="2">Compute PLV against GT channel for each EEG channel</step>
+      <step order="3">Select channel with highest PLV as output signal</step>
+      <output>Best raw EEG channel time series (20 ON epochs × on_window_samples)</output>
+      <selection_criterion>Argmax PLV vs GT across all channels</selection_criterion>
+    </signal_path>
+
+    <signal_path id="B" label="SASS source">
+      <step order="1">Bandpass filter ON and late-OFF epochs into view band (4–20 Hz)</step>
+      <step order="2">
+        Compute covariance matrices:
+        cov_A = covariance of ON signal (artifact-contaminated);
+        cov_B = covariance of late-OFF signal (clean reference)
+      </step>
+      <step order="3">
+        SASS: generalized eigendecomposition of cov_A relative to cov_B.
+        Sort components by descending eigenvalue (high λ = artifact-dominated).
+        Null the top N components (N chosen to minimize MSE between projected cov and cov_B).
+        Project back to channel space → artifact-suppressed ON epochs.
+      </step>
+      <step order="4">
+        Second eigendecomposition on SASS-cleaned data:
+        Bandpass SASS output into signal band; compute cov_ON and cov_OFF.
+        Generalized eigendecomposition: cov_ON · w = λ · cov_OFF · w.
+        Sort ascending (low λ = low ON variance relative to OFF = most suppressed artifact).
+        Keep top 6 components.
+      </step>
+      <step order="5">
+        Rank 6 components by broadband (4–20 Hz) ON/OFF power ratio.
+        Select component with lowest ratio (most artifact-suppressed).
+      </step>
+      <output>One SASS-derived component time series (20 ON epochs × on_window_samples)</output>
+      <selection_criterion>Min broadband ON/OFF power ratio from SASS-cleaned data</selection_criterion>
+    </signal_path>
+
+    <signal_path id="C" label="SSD component (from raw)">
+      <step order="1">
+        Bandpass raw ON epochs into signal band (11.95–12.95 Hz) → cov_signal.
+        Bandpass raw ON epochs into view band (4–20 Hz) → cov_view.
+      </step>
+      <step order="2">
+        Generalized eigendecomposition: cov_signal · w = λ · cov_view · w.
+        Sort descending (high λ = signal-band dominant).
+        Keep top 6 components.
+      </step>
+      <step order="3">
+        Rank 6 components by broadband (4–20 Hz) ON/OFF power ratio
+        (OFF power from late-OFF raw epochs).
+        Select component with lowest ratio (most artifact-suppressed).
+      </step>
+      <output>One SSD component time series from raw data (20 ON epochs × on_window_samples)</output>
+      <selection_criterion>Min broadband ON/OFF power ratio from raw data</selection_criterion>
+    </signal_path>
+
+    <reference_signal id="D" label="GT vs STIM">
+      <description>
+        PLV between the measured stimulation voltage trace and the GT channel.
+        Used as a fixed upper-bound reference — no selection or transformation applied.
+      </description>
+    </reference_signal>
+  </pipeline_overview>
+
+  <key_decisions>
+    <decision id="1">
+      <step>Baseline SSD weights</step>
+      <choice>Component index 0 (highest eigenvalue) selected, fixed</choice>
+      <rationale>Prior exploratory checks confirmed this is the GT-locked component</rationale>
+      <note>NOTE: baseline SSD weights are NOT used in analyze_exp06_run02_on_raw_sass_ssd_plv.py — SSD is re-fitted per intensity block on raw ON data</note>
+    </decision>
+    <decision id="2">
+      <step>SASS null count</step>
+      <choice>Automatic: MSE criterion between projected covariance and clean reference cov_B</choice>
+      <rationale>Finds the number of artifact components whose removal best recovers the clean signal covariance</rationale>
+    </decision>
+    <decision id="3">
+      <step>Component ranking for SASS source and SSD</step>
+      <choice>Lowest broadband ON/OFF power ratio</choice>
+      <rationale>Proxy for artifact suppression — component with least ON-state broadband power inflation relative to OFF is presumed most artifact-free</rationale>
+      <note>Raw channel uses PLV directly; SASS and SSD use power ratio — asymmetric criteria</note>
+    </decision>
+  </key_decisions>
+
+  <compared_signals>
+    <signal>Raw selected channel (best PLV channel)</signal>
+    <signal>SASS source (artifact-nulled → eigendecomp → power-ratio ranked)</signal>
+    <signal>SSD component (signal-band eigendecomp on raw → power-ratio ranked)</signal>
+    <signal>GT vs STIM (reference upper bound)</signal>
+    <metric>PLV against GT channel, per intensity block (10%, 20%, 30%, 40%, 50%)</metric>
+    <metric>Phase-difference polar histograms (circular 0–2π distribution)</metric>
+  </compared_signals>
+</analysis_request>

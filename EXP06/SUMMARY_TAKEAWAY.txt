@@ -1,0 +1,108 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                     SNR-BASED SELECTION: KEY TAKEAWAY                      ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+WHAT WAS DONE:
+==============
+Implemented SNR-based component selection (signal-band power / broadband power)
+across all three methods (raw, SASS, SSD) and compared to original PLV-based.
+
+Raw channel: Locked at 10% (best SNR), applied to all intensities
+SASS channel: Selected by SNR per intensity
+SSD component: Selected by SNR per intensity
+
+
+WHAT IT REVEALS:
+================
+
+Raw Channel (Same locked channel P8 across all intensities):
+  10%:  SNR 3.42, PLV 0.710  ← Signal present
+  20%:  SNR 4.25, PLV 0.731  ← Slightly better
+  30%:  SNR 0.21, PLV 0.456  ← 20× SNR collapse
+  40%:  SNR 0.0006, PLV 0.754 ← PARADOX: SNR ≈ 0, PLV 0.75 (pure artifact!)
+  50%:  SNR 0.0008, PLV 0.743 ← Same paradox
+
+  TREND: Monotonic SNR collapse → Raw method is USELESS above 30%
+
+
+SASS Channel (Adaptive per intensity):
+  10%:  SNR 2.61, PLV 0.967
+  20%:  SNR 8.25, PLV 0.973  ← BEST SNR of all methods at any intensity
+  30%:  SNR 0.37, PLV 0.262  ← 22× collapse (broadband nulling fails)
+  40%:  SNR 4.58, PLV 0.857  ← Partial recovery
+  50%:  SNR 5.17, PLV 0.872  ← Stable recovery
+
+  TREND: Peaks at 20%, fails at 30% (artifact becomes too complex)
+
+
+SSD Component (Adaptive per intensity):
+  10%:  SNR 3.96, PLV 0.936  ← Good
+  20%:  SNR 6.36, PLV 0.950  ← Best SNR
+  30%:  SNR 4.09, PLV 0.985  ← Robust
+  40%:  SNR 2.23, PLV 0.182  ← Degrades but stays usable (component switched)
+  50%:  SNR 4.47, PLV 0.505  ← Recovery (component switched again)
+
+  TREND: Maintains SNR > 2 across all intensities → SSD is ROBUST
+
+
+════════════════════════════════════════════════════════════════════════════
+
+WHY THIS MATTERS:
+=================
+
+Original PLV-based Results (Confusing):
+  Raw:   0.716 → 0.467 → 0.960 (SPIKE) → 0.963 → 0.959
+  SASS:  0.975 → 0.973 → 0.262 (CRASH) → 0.862 → 0.872
+  SSD:   0.964 → 0.932 → 0.960 → 0.353 (CRASH) → 0.767
+
+  Question: "Why does raw mysteriously recover at 30%? Why do SASS/SSD crash?"
+  Answer (Hidden): Artifact saturation masked by phase locking to GT
+
+
+New SNR-based Results (Clear):
+  Raw SNR:   3.42 → 4.25 → 0.21 → 0.0006 → 0.0008 (monotonic)
+  SASS SNR:  2.61 → 8.25 (peak) → 0.37 (crash) → 4.58 → 5.17
+  SSD SNR:   3.96 → 6.36 → 4.09 → 2.23 → 4.47 (stable)
+
+  Answer (Revealed): 
+    - Raw collapses under artifact burden
+    - SASS peaks at 20%, fails at 30% (artifact type-dependent)
+    - SSD maintains signal across all intensities
+
+
+════════════════════════════════════════════════════════════════════════════
+
+THE ARTIFACT SATURATION STORY:
+==============================
+
+Stage 1 (10–20% intensity):
+  Artifact = simple broadband noise
+  → All methods work (raw SNR 3–4, SASS SNR 8, SSD SNR 6)
+  → SASS is actually best here
+
+Stage 2 (30% intensity):
+  Artifact changes structure (resonant modes activated)
+  → Raw collapses (SNR 0.21)
+  → SASS collapses (SNR 0.37) — broadband nulling fails
+  → SSD stable (SNR 4.09) — spectral optimization preserves signal
+
+Stage 3 (40–50% intensity):
+  Artifact fully saturates channel space
+  → Raw is dead (SNR 0.0006–0.0008)
+  → SASS partially recovers (SNR 4.6–5.2) — different artifact structure
+  → SSD adapts (SNR 2.2→4.5) — component selection changes per intensity
+
+════════════════════════════════════════════════════════════════════════════
+
+BOTTOM LINE:
+============
+
+✗ PLV-based selection: Hides artifact saturation, produces confusing results
+
+✓ SNR-based selection: Reveals artifact burden clearly and quantitatively
+
+∴ Use SNR for component selection from now on
+
+All diagnostic plots (PSD, timecourse, ITPC) are now generated with SNR-selected
+components for raw, SASS, and SSD across 10%, 20%, 30%, 40%, 50% intensities.
+

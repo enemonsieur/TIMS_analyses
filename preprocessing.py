@@ -1076,10 +1076,20 @@ def sample_phase_differences(
     target_signal: np.ndarray,
     sampling_rate_hz: float,
     reference_frequency_hz: float,
+    signal_band_hz: tuple[float, float] = None,
 ) -> np.ndarray:
-    """Sample wrapped target-vs-reference phase differences once per reference cycle."""
+    """Sample wrapped target-vs-reference phase differences once per reference cycle.
+
+    If signal_band_hz is provided, filter signals to that band before Hilbert transform.
+    """
     reference_vector = np.asarray(reference_signal, dtype=float).ravel()
     target_vector = np.asarray(target_signal, dtype=float).ravel()
+
+    # Filter to signal band before Hilbert (if band specified)
+    if signal_band_hz is not None:
+        reference_vector = filter_signal(reference_vector[np.newaxis, :], sampling_rate_hz, signal_band_hz[0], signal_band_hz[1])[0]
+        target_vector = filter_signal(target_vector[np.newaxis, :], sampling_rate_hz, signal_band_hz[0], signal_band_hz[1])[0]
+
     min_peak_distance_samples = max(1, int(round(0.8 * sampling_rate_hz / reference_frequency_hz)))
     reference_peaks, _ = find_peaks(reference_vector, distance=min_peak_distance_samples)
     if reference_peaks.size < 4:
@@ -1112,6 +1122,139 @@ def find_psd_peak_frequency(
     visible_freqs_hz = frequencies_hz[visible_mask]
     visible_psd_values = psd_values[visible_mask]
     return float(visible_freqs_hz[int(np.argmax(visible_psd_values))])
+
+
+def compute_epoch_plv_summary(
+    signal_epochs: np.ndarray,
+    reference_epochs: np.ndarray,
+    sampling_rate_hz: float,
+    signal_band_hz: tuple[float, float],
+    reference_frequency_hz: float,
+    time_window_s: tuple[float, float] | None = None,
+) -> dict[str, Any]:
+    """Compute one scalar PLV summary from matched epochs using one phase sample per reference cycle.
+
+    If time_window_s is provided, restrict computation to [start_s, end_s] relative to epoch start.
+    """
+    # Crop to time window if specified
+    if time_window_s is not None:
+        start_sample = int(np.round(time_window_s[0] * sampling_rate_hz))
+        end_sample = int(np.round(time_window_s[1] * sampling_rate_hz))
+        signal_epochs = signal_epochs[:, start_sample:end_sample]
+        reference_epochs = reference_epochs[:, start_sample:end_sample]
+
+    band_metrics = compute_band_limited_epoch_triplet_metrics(
+        signal_epochs,
+        reference_epochs,
+        sampling_rate_hz,
+        signal_band_hz,
+    )
+
+    phase_samples = []
+    for signal_epoch, reference_epoch in zip(
+        band_metrics["signal_band_epochs"],
+        band_metrics["reference_band_epochs"],
+        strict=True,
+    ):
+        phase_samples.append(
+            sample_phase_differences(
+                reference_signal=reference_epoch,
+                target_signal=signal_epoch,
+                sampling_rate_hz=sampling_rate_hz,
+                reference_frequency_hz=reference_frequency_hz,
+                signal_band_hz=signal_band_hz,
+            )
+        )
+    sampled_phase_differences = np.concatenate(phase_samples)
+    plv_value = float(np.abs(np.mean(np.exp(1j * sampled_phase_differences))))
+    return {
+        "plv": plv_value,
+        "p_value": approximate_rayleigh_p(sampled_phase_differences),
+        "phase_samples": sampled_phase_differences,
+        "mean_gt_locking": float(np.mean(band_metrics["itpc_curve"])),
+    }
+
+
+def select_top_channels_against_reference(
+    channel_epochs: np.ndarray,
+    reference_epochs: np.ndarray,
+    channel_names: list[str],
+    sampling_rate_hz: float,
+    signal_band_hz: tuple[float, float],
+    view_band_hz: tuple[float, float],
+    reference_frequency_hz: float,
+    top_channel_count: int,
+) -> dict[str, Any]:
+    """Keep the best in-band reference-matching channels and summarize their PLV."""
+    channel_rows = []
+    for channel_index, channel_name in enumerate(channel_names):
+        channel_epoch_matrix = np.asarray(channel_epochs[:, channel_index, :], dtype=float)
+        channel_peak_hz = find_psd_peak_frequency(
+            channel_epoch_matrix.reshape(-1),
+            sampling_rate_hz,
+            view_band_hz,
+        )
+        channel_metrics = compute_epoch_plv_summary(
+            channel_epoch_matrix,
+            reference_epochs,
+            sampling_rate_hz,
+            signal_band_hz,
+            reference_frequency_hz,
+        )
+        channel_rows.append(
+            {
+                "name": channel_name,
+                "peak_hz": float(channel_peak_hz),
+                "plv": float(channel_metrics["plv"]),
+                "p_value": float(channel_metrics["p_value"]),
+                "mean_gt_locking": float(channel_metrics["mean_gt_locking"]),
+                "phase_samples": np.asarray(channel_metrics["phase_samples"], dtype=float),
+            }
+        )
+
+    in_band_rows = [
+        row
+        for row in channel_rows
+        if signal_band_hz[0] <= row["peak_hz"] <= signal_band_hz[1]
+    ]
+    if len(in_band_rows) == 0:
+        return {
+            "selected_rows": [],
+            "pooled_phase_samples": np.array([], dtype=float),
+            "pooled_plv": float("nan"),
+            "pooled_p_value": float("nan"),
+            "mean_selected_plv": float("nan"),
+            "pooled_mean_gt_locking": float("nan"),
+            "best_channel_name": "none",
+            "best_channel_plv": float("nan"),
+            "best_channel_p_value": float("nan"),
+            "best_phase_samples": np.array([], dtype=float),
+            "selection_note": "no in-band channel",
+        }
+
+    ranking_rows = in_band_rows
+    selection_note = "in-band only"
+    selected_rows = sorted(
+        ranking_rows,
+        key=lambda row: (row["plv"], -abs(row["peak_hz"] - reference_frequency_hz)),
+        reverse=True,
+    )[:top_channel_count]
+
+    pooled_phase_samples = np.concatenate([row["phase_samples"] for row in selected_rows])
+    pooled_plv = float(np.abs(np.mean(np.exp(1j * pooled_phase_samples))))
+    return {
+        "selected_rows": selected_rows,
+        "pooled_phase_samples": pooled_phase_samples,
+        "pooled_plv": pooled_plv,
+        "pooled_p_value": approximate_rayleigh_p(pooled_phase_samples),
+        "mean_selected_plv": float(np.mean([row["plv"] for row in selected_rows])),
+        "pooled_mean_gt_locking": float(np.mean([row["mean_gt_locking"] for row in selected_rows])),
+        "best_channel_name": str(selected_rows[0]["name"]),
+        "best_channel_plv": float(selected_rows[0]["plv"]),
+        "best_channel_p_value": float(selected_rows[0]["p_value"]),
+        "best_phase_samples": np.asarray(selected_rows[0]["phase_samples"], dtype=float),
+        "selection_note": selection_note,
+    }
 
 
 def compute_snr10_db(signal_1d: np.ndarray, sampling_rate_hz: float) -> float:
@@ -1567,3 +1710,105 @@ def correct_pvalues_bh(p_values: np.ndarray) -> np.ndarray:
     corrected = np.empty_like(adjusted)
     corrected[order] = adjusted
     return corrected
+
+
+def compute_snr_linear(
+    signal_epochs: np.ndarray,
+    sampling_rate_hz: float,
+    signal_band_hz: tuple[float, float],
+    view_band_hz: tuple[float, float],
+) -> np.ndarray | float:
+    """Compute SNR as linear ratio: power(signal_band) / power(view_band).
+
+    SNR = mean power in signal_band / mean power in broadband view_band.
+    Supports 1D (n_samples), 2D (n_epochs, n_samples), or 3D (n_channels, n_epochs, n_samples).
+
+    Returns scalar for 1D input, scalar for 2D (concatenated across epochs), (n_channels,) for 3D.
+    """
+    signal_array = np.asarray(signal_epochs, dtype=float)
+    if signal_array.ndim > 3:
+        raise ValueError("signal_epochs must be 1D, 2D, or 3D.")
+
+    # Handle dimensionality
+    if signal_array.ndim == 1:
+        # 1D: flatten already (n_samples,)
+        flat = signal_array
+        is_multichannel = False
+    elif signal_array.ndim == 2:
+        # 2D: (n_epochs, n_samples) → concatenate to (n_epochs*n_samples,)
+        flat = signal_array.reshape(-1)
+        is_multichannel = False
+    else:
+        # 3D: (n_channels, n_epochs, n_samples) → per-channel (n_channels, n_epochs*n_samples)
+        flat = signal_array.reshape(signal_array.shape[0], -1)
+        is_multichannel = True
+
+    # Compute power spectrum via FFT
+    psd = np.abs(np.fft.rfft(flat, axis=-1)) ** 2
+    freqs_hz = np.fft.rfftfreq(flat.shape[-1], 1.0 / sampling_rate_hz)
+
+    # Frequency masks
+    signal_mask = (freqs_hz >= signal_band_hz[0]) & (freqs_hz <= signal_band_hz[1])
+    view_mask = (freqs_hz >= view_band_hz[0]) & (freqs_hz <= view_band_hz[1])
+
+    # Compute power in each band
+    if is_multichannel:
+        signal_power = np.mean(psd[:, signal_mask], axis=1)
+        view_power = np.mean(psd[:, view_mask], axis=1)
+    else:
+        signal_power = float(np.mean(psd[signal_mask]))
+        view_power = float(np.mean(psd[view_mask]))
+
+    # Avoid divide by zero
+    view_power = np.maximum(view_power, 1e-10)
+    snr = signal_power / view_power
+
+    return snr
+
+
+def compute_itpc_timecourse(
+    signal_epochs: np.ndarray,
+    reference_epochs: np.ndarray,
+    sampling_rate_hz: float,
+    band_hz: tuple[float, float],
+    time_window_s: tuple[float, float] | None = None,
+) -> np.ndarray:
+    """Compute ITPC (Inter-Trial Phase Clustering) timecourse: phase coherence per sample.
+
+    Band-pass filter matched epoch pairs, compute instantaneous phase via Hilbert,
+    then compute phase synchrony per sample: ITPC = |mean(exp(i*phase_diff))|.
+
+    If time_window_s is provided, restrict computation to [start_s, end_s] relative to epoch start.
+
+    Returns (n_samples,) array with ITPC ∈ [0, 1] per sample.
+    """
+    signal_array = np.asarray(signal_epochs, dtype=float)
+    reference_array = np.asarray(reference_epochs, dtype=float)
+    n_epochs = min(signal_array.shape[0], reference_array.shape[0])
+    if n_epochs < 1:
+        raise ValueError("Need at least one matched epoch to compute ITPC.")
+
+    # Band-pass filter to target band (before cropping, to maintain filter stability)
+    signal_band = filter_signal(signal_array[:n_epochs], sampling_rate_hz, band_hz[0], band_hz[1])
+    reference_band = filter_signal(reference_array[:n_epochs], sampling_rate_hz, band_hz[0], band_hz[1])
+
+    # Crop to time window if specified
+    if time_window_s is not None:
+        start_sample = int(np.round(time_window_s[0] * sampling_rate_hz))
+        end_sample = int(np.round(time_window_s[1] * sampling_rate_hz))
+        signal_band = signal_band[:, start_sample:end_sample]
+        reference_band = reference_band[:, start_sample:end_sample]
+
+    # Instantaneous phase via Hilbert transform
+    signal_phase = np.angle(hilbert(signal_band, axis=-1))
+    reference_phase = np.angle(hilbert(reference_band, axis=-1))
+
+    # Phase difference and ITPC timecourse
+    phase_diff = signal_phase - reference_phase
+    itpc_curve = np.abs(np.mean(np.exp(1j * phase_diff), axis=0))
+
+    if itpc_curve.ndim != 1:
+        raise RuntimeError("ITPC curve must be 1D.")
+    if not np.all(np.isfinite(itpc_curve)):
+        raise RuntimeError("ITPC curve contains non-finite values.")
+    return np.asarray(itpc_curve, dtype=float)

@@ -1,0 +1,16 @@
+50% INTENSITY ON PULSE: STIM vs GROUND_TRUTH TEMPORAL COUPLING
+======================================================================
+Time window: 0.0–2.0 s
+Epochs averaged: 20
+Sampling rate: 1000 Hz
+
+STATISTICS:
+  Correlation (STIM vs GT): 0.0098
+  GT amplitude (std): 0.052929 V
+  STIM amplitude (std): 0.094451 V
+  Amplitude ratio (STIM / GT): 1.7845
+
+INTERPRETATION:
+  Corr > 0.9  -> strong temporal coupling (rise/fall together)
+  Corr 0.5–0.9 -> moderate coupling
+  Corr < 0.5  -> weak or no temporal coupling
