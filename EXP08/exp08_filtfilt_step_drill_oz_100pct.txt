@@ -1,0 +1,19 @@
+EXP08 FILTFILT STEP DRILL
+================================================================================
+
+Input epochs: exp08_epochs_100pct_on-epo.fif
+Channel: Oz
+Filter: Butterworth band-pass 11.0-14.0 Hz, order 4
+Sampling rate: 1000.0 Hz
+Padding length: 27 samples = 0.027 s each side
+Manual-vs-Scipy max absolute difference: 0.000000 uV
+
+Equation role: one causal pass computes each output sample from current/past input and past output.
+Rendered on figure: y[n] = b0*x[n] + b1*x[n-1] - a1*y[n-1]
+
+Concrete measured values:
+time_s, raw_uV, manual_filtfilt_uV, scipy_sosfiltfilt_uV
+-0.050,  6566.311000, -70.031736, -70.031736
+ 0.000,  6566.452677,  120.441002,  120.441002
+ 0.050,  6566.457590, -73.279315, -73.279315
+ 0.100,  6566.245109, -21.961869, -21.961869

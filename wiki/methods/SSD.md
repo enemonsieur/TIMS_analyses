@@ -24,6 +24,7 @@ Spectral Source Decomposition finds spatial filters that maximize target-band st
 - If the target is weak or absent, SSD can drift to a nearby artifact mode.
 - Transfer can look good at baseline and then fail in stimulated data, as in EXP05.
 - The conclusions depend on component ranking logic; PLV and SNR do not always tell the same story.
+- **Phase preservation paradox:** [[experiments/EXP08|EXP08]] shows SSD improves SNR but degrades ITPC. Baseline ITPC=0.76, but SSD-filtered data at 100% shows ITPC=0.25 in quiet OFF-window. SSD optimizes power spectrum, not phase stability—may suppress biological signal while suppressing artifact.
 
 ## TIMS Verdict
 
@@ -37,6 +38,8 @@ SSD is currently the strongest signal-extraction path in the repo, especially un
 ## Relevant Experiments
 
 - [[experiments/EXP05|EXP05]]
+- [[experiments/EXP06|EXP06]]
+- [[experiments/EXP08|EXP08]]
 - [[experiments/EXP06|EXP06]]
 
 ## Relevant Papers

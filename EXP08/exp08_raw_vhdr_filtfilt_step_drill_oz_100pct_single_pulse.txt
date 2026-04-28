@@ -1,0 +1,40 @@
+EXP08 FILTFILT STEP DRILL: RAW VHDR SINGLE PULSE
+================================================================================
+
+Input raw file: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp08-STIM-pulse_run01_10-100.vhdr
+Provenance check passed:
+  DataFormat=BINARY, DataOrientation=MULTIPLEXED, BinaryFormat=IEEE_FLOAT_32
+  SamplingInterval=1000 us -> 1000 Hz
+  Amplifier setup: Oz low cutoff DC, high cutoff 280 Hz, notch Off
+  Software Filters: Disabled
+  No MNE Epochs, no saved FIF, no averaging
+
+Pulse timing source: same raw-stim Hilbert envelope threshold used in explore_exp08_pulses.py
+  threshold_fraction=0.08, threshold=0.0725737872 V, detected_edges=400
+Selected pulse: 100% index 0; absolute sample 470503
+Raw slice samples: start=469503, stop=472503, n=3000
+Channel: Oz
+Filter: Butterworth band-pass 11.0-14.0 Hz, order 4
+Padding length: 27 samples = 0.027 s each side
+Manual-vs-Scipy max absolute difference: 0.000000 uV
+
+First SOS section coefficients:
+b0=7.69909891471e-09, b1=1.53981978294e-08, b2=7.69909891471e-09, a1=-1.97533255236, a2=0.981941422056
+
+Executed equation at one sample near pulse onset:
+y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
+sample_index=1028, time=0.001000s
+b0*x[n]: 0.000049729 uV
+b1*x[n-1]: 0.000099467 uV
+b2*x[n-2]: 0.000049727 uV
+-a1*y[n-1]: 0.059520202 uV
+-a2*y[n-2]: -0.029591251 uV
+sum -> y[n]: 0.030127875 uV
+stored first-section y[n]: 0.030127875 uV
+
+Concrete measured values after full forward-backward filter:
+time_s, absolute_sample, raw_uV, manual_filtfilt_uV, scipy_sosfiltfilt_uV
+-0.050, 470453,  6464.892578, -267.402572, -267.402572
+ 0.000, 470503,  6459.667969,  127.062982,  127.062982
+ 0.050, 470553,  6469.189453,  114.827696,  114.827696
+ 0.100, 470603,  6463.183594, -262.821980, -262.821980

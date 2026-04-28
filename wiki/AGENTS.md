@@ -13,7 +13,7 @@ This wiki is a minimal, LLM-maintained synthesis layer for the TIMS repo.
 Only use these wiki surfaces in v1:
 
 - `wiki/home.md`
-- `wiki/experiments/`
+- `wiki/experiments/` (includes experiment pages and related memos)
 - `wiki/methods/`
 
 Do not create `index.md`, `log.md`, `claims/`, `contradictions/`, `comparisons/`, `papers/`, or `dashboard/` unless the user explicitly changes the design later.
@@ -69,30 +69,45 @@ Each page in `wiki/methods/` should keep these sections:
 
 ### Ingest
 
-Use this prompt when a new source arrives:
+Use this prompt when a new validated result arrives:
 
-`Ingest this source into the wiki. Update the affected experiment page, affected method pages, and home only if the current picture changed.`
+`Ingest [source/result] into the wiki. Create or update method/experiment pages; ensure Query can retrieve it.`
 
-Expected behavior:
+Required reading order:
+1. `wiki/home.md` — current picture and blockers
+2. Latest relevant memo or `wiki/experiments/EXP##.md`
+3. Affected `wiki/methods/*.md` pages
 
-- Read the source.
-- Decide which experiment page owns it.
-- Update method pages only if the source changes method interpretation.
-- Add or revise evidence links.
-- Preserve older conclusions only as caveats if they are now weakened.
+Update sequence:
+1. **Create method page** (if new) or **update existing**: add validated pipeline, results table, limitations, operational prompts (Query + Ingest)
+2. **Update experiment page**: link to new method, add evidence, update Next Step
+3. **Update home.md**: add Status Update (date + one-liner), only if interpretation changed or blocker resolved
+4. **Add to memory** (`memory/*.md`): save the validated constraints for next session
+
+Ensure:
+- Method page has Query prompt (ready to apply to new target)
+- Method page has Ingest prompt (ready to update if result changes)
+- Experiment page has Evidence links to repo code/plots
+- home.md has link to new method
+- Next step in home.md is unambiguous (new blocker or next experiment)
 
 ### Query
 
-Use this prompt for normal exploration:
+Use this prompt to apply validated method to new target:
 
-`Answer this question from the wiki first, then pull in repo evidence and papers as needed. File back only durable conclusions.`
+`Answer from wiki/methods/[METHOD].md. Apply to [target]. Report: where it works, what constraints apply, what to do if blocked.`
 
-Expected behavior:
+Required reading order:
+1. `wiki/methods/[METHOD].md` — validated pipeline, limitations, operational prompts
+2. `wiki/home.md` — current blocker, intensity constraints, etc.
+3. Memory (`memory/*.md`) — prior constraints and gotchas
+4. Reference script in method page
 
-- Read the relevant wiki pages first.
-- Pull in repo evidence only where needed.
-- If the answer changes the durable interpretation, write it back into an existing page.
-- Do not create a new page by default for one-off answers.
+Report:
+- What the method does and why (from wiki)
+- Constraints (intensity, channel quality, saturation points)
+- Expected results on [target]
+- If blocked, suggest next Ingest workflow to resolve
 
 ### Lint
 

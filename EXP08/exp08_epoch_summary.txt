@@ -14,14 +14,14 @@ Dose-response protocol:
   Inter-pulse interval: 5.0 s
 
 ON window definition:
-  Start: -0.50 s (pre-pulse baseline)
-  End: 1.0 s post-pulse onset
-  Duration: 1.5 s (1500 samples)
+  Start: -1.00 s (pre-pulse baseline)
+  End: 2.0 s post-pulse onset
+  Duration: 3.0 s (3000 samples)
   Pulse onset: at t=0 (center of window)
 
 Late-OFF window definition (noise reference):
-  Start: 1.5 s post-pulse onset
-  End: 3.2 s post-pulse onset
+  Start: 2.5 s post-pulse onset
+  End: 4.2 s post-pulse onset
   Duration: 1.7 s
   Purpose: covariance reference for SASS/SSD (free of stimulus artifact)
 
@@ -43,12 +43,12 @@ Intensity    Valid Epochs    Output Files
 TOTAL        200            
 --------------------------------------------------------------------------------
 
-Excluded channels: TP9, TP10, Fp1
+Excluded channels: TP10, TP9, Fp1
 Pulse detection threshold: 8% of max stim amplitude
 
 Output files generated per intensity:
-  exp08_epochs_*pct_on-epo.fif (ON window: -0.1 to +0.5 s)
-  exp08_epochs_*pct_lateoff-epo.fif (late-OFF window: 1.5 to 3.2 s)
+  exp08_epochs_*pct_on-epo.fif (ON window: -1.0 to +2.0 s)
+  exp08_epochs_*pct_lateoff-epo.fif (late-OFF window: 2.5 to 4.2 s)
   exp08_gt_epochs_*pct_on-epo.fif (GT reference, ON window)
   exp08_gt_epochs_*pct_lateoff-epo.fif (GT reference, late-OFF window)
 

@@ -1,0 +1,54 @@
+================================================================================
+EXP08 TRIPLET ARTIFACT FILTERING: Raw vs. SASS vs. SSD
+================================================================================
+
+EPOCH SOURCE: exp08-STIM-triplet_run02_10-100.vhdr
+  Triplet structure: 3 half-sine pulses at 0 / 20 / 40 ms (50 Hz)
+  Protocol: 20 triplets × 10 intensity levels (10–100%); 5 s inter-triplet
+
+TIME WINDOWS:
+  ON:       -0.6 to 0.7 s
+  late-OFF: 2.5 to 4.2 s (noise reference)
+
+FREQUENCY BANDS:
+  Signal: 12.5–13.5 Hz
+  View:   4.0–20.0 Hz
+
+================================================================================
+Intensity  Raw SNR      SASS SNR     SSD SNR      Raw ITPC     SASS ITPC    SSD ITPC    
+--------------------------------------------------------------------------------
+10%        1.488        5.289        4.965        0.905        0.984        0.963       
+20%        1.113        5.051        5.460        0.959        0.979        0.981       
+30%        2.124        6.616        6.750        0.958        0.988        0.987       
+40%        1.123        5.904        5.992        0.953        0.989        0.960       
+50%        0.364        6.484        6.150        0.354        0.976        0.984       
+60%        0.260        5.368        5.819        0.317        0.975        0.949       
+70%        0.401        7.264        7.479        0.224        0.955        0.987       
+80%        0.420        7.428        7.822        0.382        0.982        0.956       
+90%        0.458        5.876        6.686        0.564        0.973        0.972       
+100%       0.462        6.626        6.462        0.198        0.979        0.948       
+================================================================================
+
+Raw locked channel: Oz
+SASS best channel per intensity:
+  10%: Oz
+  20%: Oz
+  30%: O2
+  40%: Oz
+  50%: Oz
+  60%: F7
+  70%: P8
+  80%: O2
+  90%: F7
+  100%: O2
+SSD best component per intensity:
+  10%: Component 0
+  20%: Component 0
+  30%: Component 0
+  40%: Component 0
+  50%: Component 0
+  60%: Component 0
+  70%: Component 0
+  80%: Component 0
+  90%: Component 0
+  100%: Component 0

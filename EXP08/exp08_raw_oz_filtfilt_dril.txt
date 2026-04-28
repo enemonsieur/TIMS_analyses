@@ -1,0 +1,17 @@
+EXP08 RAW OZ FILTFILT DRIL
+================================================================================
+
+Source: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp08-STIM-pulse_run01_10-100.vhdr
+Crop: 914.0-919.0 s
+Channel: Oz
+Representation: continuous raw crop; no epochs; no pulse extraction; no averaging
+Sampling rate: 1000.0 Hz
+Artifact time within crop: 1.527 s
+Baseline median before artifact: 6543.945 uV
+Artifact trough: -73143.359 uV
+Artifact deflection: -79687.305 uV
+Filter: Butterworth 11.0-14.0 Hz, order 4
+Padding length: 27 samples = 0.027 s per edge
+Manual-vs-Scipy max abs difference: 0.000000000 uV
+Figure: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_raw_oz_filtfilt_dril.png
+Figure copy: None

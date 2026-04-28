@@ -1,14 +1,13 @@
-"""Plot mean timecourse ±1s around stimulus for 5 channels."""
+"""Plot mean timecourse ±1s around stimulus for single channel."""
 
 import matplotlib
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
 from pathlib import Path
-
 # ══ CONFIG ══
 INTENSITY = 50  # % — modify
-N_CH = 5
+CHANNEL = "C3"  # modify: "C3", "Cz", "Oz", etc.
 EPOCH_DIR = Path(r"C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08")
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -20,16 +19,25 @@ epochs = mne.read_epochs(
     preload=True, verbose=False
 )
 
-data_mean = np.mean(epochs.get_data()[:, :N_CH, :], axis=0)
+# ── Gentle high-pass filter (0.5 Hz) ──
+epochs.filter(l_freq=0.5, h_freq=None, verbose=False)
+
+ch_idx = epochs.ch_names.index(CHANNEL)
+data = epochs.get_data()[:, ch_idx, :]  # (n_epochs, n_samples)
+
+# ── Demean per epoch ──
+data = data - np.mean(data, axis=1, keepdims=True)
+
+data_mean = np.mean(data, axis=0)*1e6  # convert to µV
 
 fig, ax = plt.subplots(figsize=(10, 4))
-for i, ch_name in enumerate(epochs.ch_names[:N_CH]):
-    ax.plot(epochs.times, data_mean[i], label=ch_name, lw=1)
+ax.plot(epochs.times, data_mean, label=CHANNEL, lw=1.5)
 ax.axvline(0, color="red", linestyle="--", alpha=0.5, label="Stim")
-ax.set(xlabel="Time (s)", ylabel="µV", title=f"ON-window ({INTENSITY}%)")
-ax.legend(ncol=2, fontsize=9)
-ax.grid(alpha=0.2)
+ax.set(xlabel="Time (s)", ylabel="µV", title=f"{CHANNEL} ON-window ({INTENSITY}%)")
+ax.legend(fontsize=9)
+ax.set_ylim(-30, 30)
+#ax.grid(alpha=0.2)
 fig.tight_layout()
 fig.savefig(EPOCH_DIR / f"timecourse_{INTENSITY}pct.png", dpi=150)
 plt.close()
-print("✓ Saved")
+print("Saved: timecourse_%dpct.png" % INTENSITY)

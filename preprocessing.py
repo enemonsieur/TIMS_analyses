@@ -17,7 +17,70 @@ from typing import Any
 import mne
 from mne.time_frequency import tfr_array_morlet
 import numpy as np
-from scipy.signal import butter, coherence, filtfilt, find_peaks, hilbert, iirnotch, sosfiltfilt, welch
+from scipy.signal import butter, coherence, filtfilt, find_peaks, hilbert, iirnotch, sosfilt, welch
+from scipy.optimize import curve_fit
+
+
+def subtract_exponential_decay(
+    epochs: Any,
+    fit_start_s: float = 0.020,
+    outlier_threshold_v: float = 0.01,
+    max_tau_s: float = 10.0,
+    min_tau_s: float = 0.01,
+) -> Any:
+    """Fit and subtract exponential decay per channel from MNE epochs.
+
+    Fit: A·exp(-t/τ) + C on evoked average from fit_start_s onward.
+    Skips outlier channels (|amplitude| > outlier_threshold_v) and failed fits.
+    Returns epochs with decay subtracted.
+    """
+    epochs = epochs.copy()
+    evoked = epochs.average()
+    time_s = evoked.times
+    fit_mask = time_s > fit_start_s
+
+    if not np.any(fit_mask):
+        raise ValueError(f"No samples > {fit_start_s} s for decay fit.")
+
+    for ch_idx in range(len(evoked.ch_names)):
+        ch_data = evoked.data[ch_idx]
+
+        if np.max(np.abs(ch_data)) > outlier_threshold_v:
+            continue
+
+        try:
+            fit_region = ch_data[fit_mask]
+            if fit_region.size < 10:
+                continue
+
+            p0 = [
+                np.max(np.abs(fit_region[:50])),
+                0.5,
+                np.median(fit_region[-50:]),
+            ]
+
+            params, _ = curve_fit(
+                lambda t, A, tau, C: A * np.exp(-t / tau) + C,
+                time_s[fit_mask],
+                fit_region,
+                p0=p0,
+                bounds=(
+                    [-np.inf, min_tau_s, -np.inf],
+                    [np.inf, max_tau_s, np.inf],
+                ),
+                maxfev=2000,
+            )
+
+            fitted = params[0] * np.exp(-time_s / params[1]) + params[2]
+            if np.max(np.abs(fitted)) > outlier_threshold_v:
+                continue
+
+            epochs._data[:, ch_idx, :] -= fitted[np.newaxis, :]
+
+        except Exception:
+            pass
+
+    return epochs
 
 
 def filter_signal(
@@ -38,7 +101,7 @@ def filter_signal(
     notch_filtered = filtfilt(notch_b, notch_a, input_array, axis=-1)
 
     bandpass_sos = butter(order, [low_hz, high_hz], btype="bandpass", fs=sampling_rate_hz, output="sos")
-    bandpassed = sosfiltfilt(bandpass_sos, notch_filtered, axis=-1)
+    bandpassed = sosfilt(bandpass_sos, notch_filtered, axis=-1)
 
     if bandpassed.shape != input_array.shape:
         raise RuntimeError("Filtering changed array shape unexpectedly.")
@@ -892,8 +955,8 @@ def compute_stage_ground_truth_metrics(
         plv_values: list[float] = []
         if int(np.sum(eval_mask)) >= int(min_eval_samples):
             for eeg_epoch, gt_epoch in zip(eeg_epoch_data, gt_epoch_data):
-                eeg_band = sosfiltfilt(band_sos, eeg_epoch[eval_mask])
-                gt_band = sosfiltfilt(band_sos, gt_epoch[eval_mask])
+                eeg_band = sosfilt(band_sos, eeg_epoch[eval_mask])
+                gt_band = sosfilt(band_sos, gt_epoch[eval_mask])
                 coherence_values.append(
                     compute_coherence_band(
                         signal_a=eeg_band,

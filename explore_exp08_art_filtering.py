@@ -448,7 +448,7 @@ print("\nGenerating figures...")
 # ══ 8.1 ITPC timecourse figure: 10 subplots (one per intensity) ══
 intensity_pcts = [int(level * 100) for level in INTENSITY_LEVELS]
 n_samples = len(next(iter(raw_itpc_curves.values())))
-time_s = np.arange(n_samples) / sfreq + ON_WINDOW_S[0]
+time_s = np.arange(n_samples) / sfreq + ITPC_WINDOW_S[0]
 
 fig, axes = plt.subplots(len(intensity_pcts), 1, figsize=(11, 22),
                          constrained_layout=True, sharex=True, sharey=True)

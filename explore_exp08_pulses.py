@@ -24,8 +24,8 @@ PULSES_PER_INTENSITY = 20
 INTER_PULSE_INTERVAL_S = 5.0
 
 # Time windows: ON (pre-post) and late-OFF (noise reference)
-ON_WINDOW_S = (-0.5, 1.0)
-LATE_OFF_WINDOW_S = (1.5, 3.2)
+ON_WINDOW_S = (-1.0, 2.0)
+LATE_OFF_WINDOW_S = (2.5, 4.2)
 EXCLUDED_CHANNELS = {"TP9", "Fp1", "TP10"}
 
 # Pulse detection threshold
@@ -44,8 +44,8 @@ STIM_THRESHOLD_FRACTION = 0.08  # recover weak first pulse
 # │  └─ Each group: 20 pulses (100 s duration, 5 s inter-pulse interval)
 # │
 # ├─ Per intensity: build two time windows from same pulse onsets
-# │  ├─ ON window: -0.5 to +1.0 s (pre-post baseline + response)
-# │  └─ late-OFF window: 1.5 to 3.2 s (noise reference, no stimulus artifact)
+# │  ├─ ON window: -1.0 to +2.0 s (pre-post baseline + response)
+# │  └─ late-OFF window: 2.5 to 4.2 s (noise reference, no stimulus artifact)
 # │
 # ├─ Extract: three epoch sets per intensity per window
 # │  ├─ EEG epochs (28 channels)
@@ -334,8 +334,8 @@ with open(summary_path, "w") as f:
     f.write(f"Pulse detection threshold: {STIM_THRESHOLD_FRACTION * 100:.0f}% of max stim amplitude\n\n")
 
     f.write("Output files generated per intensity:\n")
-    f.write("  exp08_epochs_*pct_on-epo.fif (ON window: -0.1 to +0.5 s)\n")
-    f.write("  exp08_epochs_*pct_lateoff-epo.fif (late-OFF window: 1.5 to 3.2 s)\n")
+    f.write("  exp08_epochs_*pct_on-epo.fif (ON window: -1.0 to +2.0 s)\n")
+    f.write("  exp08_epochs_*pct_lateoff-epo.fif (late-OFF window: 2.5 to 4.2 s)\n")
     f.write("  exp08_gt_epochs_*pct_on-epo.fif (GT reference, ON window)\n")
     f.write("  exp08_gt_epochs_*pct_lateoff-epo.fif (GT reference, late-OFF window)\n\n")
     f.write("Additional output:\n")

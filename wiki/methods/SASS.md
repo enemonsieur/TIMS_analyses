@@ -38,6 +38,7 @@ SASS is promising and sometimes crucial, but more method-sensitive than SSD. It 
 ## Relevant Experiments
 
 - [[experiments/EXP06|EXP06]]
+- [[experiments/EXP08|EXP08]]
 - [[experiments/EXP04|EXP04]]
 
 ## Relevant Papers

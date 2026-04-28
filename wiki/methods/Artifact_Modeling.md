@@ -24,6 +24,7 @@ Artifact modeling in this repo means fitting how stimulation artifact changes ac
 - The current linear propagation model underfits severe high-intensity saturation.
 - A single summary window can hide decay and channel-specific settling differences.
 - Modeling is still incomplete until decay constants and saturation curves are fitted explicitly.
+- **Exponential decay removal (A·exp(-t/τ)+C) is insufficient in EXP08**: Even "good" channels retain non-zero baseline after removal; bad channels (P7) show 10K+ µV residual DC offsets. Suggests artifact is multi-component or non-exponential. Single exponential model does not capture the cleanup requirement.
 
 ## TIMS Verdict
 
@@ -34,6 +35,8 @@ Artifact modeling is now a blocker method. Stronger ON-state and real-brain clai
 - What are the per-channel decay constants across intensity?
 - Which channels show threshold-like saturation behavior?
 - How should the resulting model feed template subtraction, channel selection, or SSD/SASS cleanup?
+- **Why does exponential decay removal fail in EXP08?** Standard A·exp(-t/τ)+C fits leave residual DC offsets (P7: 10K+ µV even in "clean" response window). Is artifact multi-component? Non-exponential tail? Per-channel baseline drift? Should we use robust regression, median baseline removal, or skip exponential fitting and rely on DC centering only?
+- **Critical gap:** Current artifact model focuses on amplitude. [[experiments/EXP08|EXP08]] shows stimulation disrupts phase coherence (ITPC 0.76 → 0.25) even when artifact is physically small (OFF-window). Need frequency-shift model: does target frequency (13 Hz) drift under field? Does GT circuit impedance change with intensity?
 
 ## Relevant Experiments
 

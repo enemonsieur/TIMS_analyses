@@ -1,0 +1,1037 @@
+ARTICLE
+Frequency-speciﬁc and state-dependent neural responses to
+brain stimulation
+Huichun Luo 1,2,3,11, Xiaolai Ye 1,4,5,11, Hui-Ting Cai 2,6,11, Mo Wang 7,11, Yue Wang 7, Qiangqiang Liu 1,4, Ying Xu 2, Ziyu Mao 4,
+Yanqing Cai4, Jing Hong 4, Chencheng Zhang 8, Pengfei Wei 9, Yong Lu 10, Quanying Liu 7 ✉, Jiwen Xu 1,4 ✉ and Ti-Fei Yuan 2,3 ✉
+© The Author(s), under exclusive licence to Springer Nature Limited 2025
+Non-invasive brain stimulation is promising for treating many neuropsychiatric and neurological conditions. It could be optimized
+by understanding its intracranial responses in different brain regions. We implanted multi-site intracranial electrodes and
+systematically assessed the acute responses in these regions to transcranial alternating current stimulation (tACS) at different
+frequencies. We observed robust neural oscillation changes in the hippocampus and amygdala in response to non-invasive tACS
+procedures, and these effects were frequency-speci ﬁc and state-dependent. Notably, the hippocampus responded most strongly
+and stably to 10 Hz stimulation, with pronounced changes across a wide frequency range, suggesting the potential of 10 Hz
+oscillatory stimulation to modulate a broad range of neural activity related to cognitive functions. Future work with increased
+sample sizes is required to determine the clinical implications of these ﬁndings for therapeutic ef ﬁciency.
+Molecular Psychiatry (2025) 30:2880–2890; https://doi.org/10.1038/s41380-025-02892-7
+INTRODUCTION
+Modulating brain rhythms, such as with transcranial alternating
+current stimulation (tACS), provides an important, non-invasive,
+and non-pharmacological approach to manipulating brain func-
+tion in both physiological and diseased states [ 1, 2]. Phase-locking
+of intrinsic brain rhythms (e.g., that of the hippocampus) through
+frequency-speciﬁc modulation or cross-frequency coupling could
+help improve both working and long-term memory [ 3–5]. Notably,
+chronic gamma band tACS over the temporal lobe or the
+precuneus improves cognition in Alzheimer ’s disease patients,
+potentially through its effects on recruiting memory processing-
+related networks (e.g., via hippocampal-cortical network) [ 6–8].
+Though there is clear evidence that tACS may serve as a neural
+oscillatory tuning procedure with frequency precision, the
+frequency-sensitive responses of the live human brain, which
+may act as an active signal ﬁlter, remain largely unknown in this
+therapeutic context, which limits our current ability to optimize
+the clinical use of tACS for speci ﬁc conditions [ 9–12].
+Based on entrainment theory, an external alternating electrical
+ﬁeld could drive temporal alignment of neuronal activity and
+facilitate cross-regional synchronization of neural oscillations. Non-
+human primate studies have indicated that prefrontal tACS could
+align the spike timing of certain hippocampal neurons to the
+external stimulation phase in a frequency-speci ﬁc manner [ 3].
+There is further evidence for a dose-dependent response pattern,
+such that the spike entrainment in responsive neurons gradually
+increases following higher tACS intensity [ 13]. On the other hand,
+the Arnold tongue theory proposes that the brain functions as an
+active signal ﬁlter and tends to respond to external frequencies
+adjacent to the intrinsic oscillation or its harmonic, resulting in the
+enhancement of the intrinsic oscillations [ 14–16]. Evidence for this
+has been presented based on the dominant alpha oscillations of
+awake ferrets and human brains [ 14, 15]. The tACS frequencies
+matched to the intrinsic alpha peak exhibit enhanced coupling
+between neuronal spiking and tACS, regardless of stimulation
+intensity. In contrast, tACS frequencies different from intrinsic
+alpha require higher stimulation intensities to achieve similar
+coupling enhancement [ 14]. As a result, a dual modulatory pattern
+emerges: tACS ﬁrst recruits brain regions with intrinsic oscillation
+frequencies close to the external stimulation frequency, then
+expands to other regions when the stimulation intensity is
+gradually increased [ 16]. However, this model neglects the
+involvement of endogenous oscillations of brain regions, and also
+the fact that the brain state is maintained through large-scale
+Received: 18 April 2024 Revised: 10 December 2024 Accepted: 10 January 2025
+Published online: 20 January 2025
+1Department of Neurosurgery, Clinical Neuroscience Center Comprehensive Epilepsy Unit, Ruijin Hospital Luwan Branch, Shanghai Jiao Tong Universi ty School of Medicine,
+Shanghai, China. 2Shanghai Key Laboratory of Psychotic Disorders, Brain Health Institute, National Center for Mental Disorders, Shanghai Mental Health Center, Shan ghai Jiao
+Tong University School of Medicine and School of Psychology, Shanghai, China. 3Co-innovation Center of Neuroregeneration, Nantong University, Nantong, China. 4Department
+of Neurosurgery, Clinical Neuroscience Center Comprehensive Epilepsy Unit, Ruijin Hospital, Shanghai Jiao Tong University School of Medicine, Sh anghai, China. 5Department of
+Neurology, Shanghai Children ’s Medical Center, School of Medicine, Shanghai Jiao Tong University, Shanghai, China. 6Shanghai Xuhui Mental Health Center, Shanghai, China.
+7Shenzhen Key Laboratory of Smart Healthcare Engineering, Southern University of Science and Technology, Shenzhen, China. 8Department of Neurosurgery, Center for
+Functional Neurosurgery, Ruijin Hospital, Shanghai Jiao Tong University School of Medicine, Shanghai, China. 9Shenzhen Key Laboratory of Neuropsychiatric Modulation and
+Collaborative Innovation Center for Brain Science, Guangdong Provincial Key Laboratory of Brain Connectome and Behavior, CAS Center for Excellenc e in Brain Science and
+Intelligence Technology, Brain Cognition and Brain Disease Institute, Shenzhen Institute of Advanced Technology, Chinese Academy of Sciences, Sh enzhen-Hong Kong Institute
+of Brain Science, Shenzhen Fundamental Research Institutions, Shenzhen, China. 10Department of Radiology, Ruijin Hospital, Shanghai Jiao Tong University School of Medicine,
+Shanghai, China. 11These authors contributed equally: Huichun Luo, Xiaolai Ye, Hui-Ting Cai, Mo Wang. ✉email: liuqy@sustech.edu.cn; xjw88@vip.163.com; ytf0707@126.com
+www.nature.com/mp Molecular Psychiatry
+1234567890();,:
+
+network-level interactions among many brain regions [ 17]. For
+instance, one study reported that low-frequency (0.75 Hz or 1 Hz)
+tACS over the frontal and occipital poles failed to enhance the
+intrinsic slow oscillations (~1 Hz) that dominate during non-rapid
+eye movement sleep [ 18]. Therefore, it is critical to obtain
+intracranial neurophysiological signals before and after non-
+invasive brain stimulation in order to understand the potential
+competition and synergy between exogenous and endogenous
+electrical ﬁelds.
+In the present study, we implanted multi-site intracranial
+electrodes to record local ﬁeld potentials (LFPs) of the hippocam-
+pus and amygdala in response to tACS procedures at different
+frequencies. The tACS procedures focused on two montages (F3-
+Fp2 and F4-Fp1) over the prefrontal cortex, which have been
+shown to signi ﬁcantly improve cognitive performance in healthy
+people [19] and are also commonly employed in clinical treatment
+for psychiatric disorders such as depression as well as cognitive
+disorders [ 20]. The hippocampus and amygdala are closely
+associated with cognitive functions linked to psychiatric disorders,
+such as emotion [ 21, 22] and memory [ 23]. Most importantly, a
+recent study revealed that these regions are crucial in under-
+standing the effects of neuromodulation over the prefrontal
+cortex [ 24]. Therefore, in the present study we mainly focused on
+the neural oscillation activity of the hippocampus and amygdala.
+We ﬁrst analyzed the LFPs before, during, and after tACS to
+capture the immediate and lasting effect of tACS on neural
+oscillations. We then calculated the correlation between the effect
+of tACS on neural oscillations and the pre-stimulation level of
+endogenous neural oscillations to reveal whether there is a
+dependency relationship between them. The results of this study
+provide support for the notion that human brain oscillations
+function as an active signal ﬁlter, in that oscillations of deep brain
+regions respond strongly to speci ﬁc frequencies and the strength
+of the response depends partly on the innate oscillation activity
+level. In particular, we found robust neural oscillation changes in
+the hippocampus under 10 Hz tACS. These ﬁndings provide
+evidence for frequency-speci ﬁc and state-dependent responses in
+the live human brain and suggest that 10 Hz tACS may have
+stronger effects than other frequencies.
+MATERIALS AND METHODS
+Participants
+Data were obtained from epileptic patients undergoing stereo electro-
+encephalogram (SEEG) to localize epileptic foci for potential surgical
+resection at the Ruijin Hospital Luwan Branch, Shanghai Jiao Tong
+University, Shanghai, China, Epilepsy Center. Intracranial depth electrodes
+(5–20 contacts, 0.8 mm diameter, 2 mm each contact, 1.5 mm spacing,
+Huake Hengsheng, Beijing, China or Alcis, Besancon, France) were
+stereotactically implanted with a stereotactic robot system (Sinovation,
+Huake, China). Clinical needs exclusively guided the electrode placements.
+All procedures performed in studies involving human participants strictly
+followed the ethical standards of the institutional research committee, the
+1964 Helsinki Declaration and its later amendments, or comparable ethical
+standards. The ethics committee of Ruijin Hospital, Shanghai Jiao Tong
+University School of Medicine, approved all procedures used. All patients
+provided written informed consent following the Declaration of Helsinki.
+Sex as a biological variable
+Our study included 2 male and 6 female participants. Sex was not
+considered as a biological variable.
+Electrode localization
+Electrodes were localized in each participant using co-registered pre-
+implantation T1-weighted MRI and post-implantation CT images trans-
+formed into MNI ICBM152 coordinates using af ﬁne co-registration in
+Brainstorm toolbox ( https://neuroimage.usc.edu/brainstorm). Intracranial
+electrodes were reconstructed by identifying the tip and trajectory of each
+electrode shaft. For the hippocampus and amygdala, the reconstruction
+was overlayed on the subcortical ASEG atlas to verify which contacts were
+located within regions of interest [ 25].
+Experimental design
+In epileptic patients undergoing SEEG monitoring, it is feasible to record
+LFPs from deep brain regions while giving tACS. We administered tACS at
+four different frequencies (5 Hz, 10 Hz, 20 Hz, and 40 Hz) to each patient,
+with each frequency of stimulation administered twice in a random order.
+A typical trial began with a 120 s pre-stimulation rest period, ~90 s of
+stimulation including 20 s ramp-up +70 s full intensity stimulation +2s
+ramp down, and a 120 s post-stimulation rest period. Patients were asked
+to rest with their eyes closed during the resting periods. The interval
+between trials was 5 min. Each participant received only one type of tACS
+montage (F3-Fp2 or F4-Fp1 montage (10 –20 system)), with the location of
+the montage determined based on the location of scalp damage from
+SEEG electrode implantation, ensuring that the stimulating electrodes were
+at least 5 cm away from the scalp damage caused by SEEG electrode
+implantation. Bipolar alternating current stimulations were performed at
+2 mA intensity, except for Sub001, for whom the stimulation intensity was
+reduced to 1.5 mA due to intolerance.
+Data acquisition
+LFPs were acquired using a Nihon Kohden recording system (256 channel
+ampliﬁer, model JE120A), analog- ﬁltered above 0.01 Hz, and digitally
+sampled at 2000 Hz. tACS was performed using two circular electrodes
+(3.5 cm external diameter). Both were inserted in a square electrode holder
+(4 cm length) ﬁlled with physiological saline, creating a 12.25 cm
+2
+stimulation area on the scalp for each electrode. The impedance was
+checked before, during, and after each stimulation to ensure the patient
+did not experience an obvious pain sensation. The stimulation was
+delivered through these electrodes using a TES stimulator (Fo.cus V3,
+London, UK). This device is widely used in clinical and scienti ﬁc research
+[26–28]. Moreover, we have demonstrated that the device can stably
+output speciﬁed stimulation under different parameters and environments
+through systematic testing (See Appendix 1. “Stimulation Device
+Investigation” in the Supplementary Material). Participants reported no
+side effects during the study except for mild skin sensations (tickling).
+Simulated electric ﬁeld calculation
+We utilized the SimNIBS 2.1 package to perform ﬁnite element method
+(FEM) simulations [ 29]. To create individualized models, we used CHARM, a
+pipeline built into SimNIBS, to process personalized T1-weighted images
+and generate FEM models [ 30]. The input images were ﬁrst segmented
+into brain tissues, which were then converted into meshes. Each mesh was
+assigned a conductivity value corresponding to the tissue type. For our
+experiments, we used the default conductivity settings: White Matter
+(0.126 S/m), Gray Matter (0.275 S/m), CSF (1.654 S/m), Compact Bone
+(0.008 S/m), Spongy Bone (0.025 S/m), Scalp (0.465 S/m), and Eyeballs
+(0.5 S/m). The FEM model assumes that there are no internal activities
+within the brain, meaning no net current sources or sinks exist within the
+elements. Thus, the electric ﬁeld (EF) of each mesh can be calculated using
+the following Poisson equation:
+∇ /C1ð σEÞ¼/C0 ∇ /C1ð σ∇VÞ¼ 0 (1)
+where E is the electric ﬁeld, σ is the tissue conductivity, and V is the
+potential distribution. Then, we used the FEM to assemble them into a
+globe matrix and de ﬁned the boundary conditions based on electrode
+settings. Electrode locations were determined based on experimental
+setups and calculated using a built-in morphological approach. During
+stimulation, we applied 2 mA to each electrode. Utilizing the potential from
+the electrodes (V0), which is determined by factors such as the electrode
+material, size, and placement, we can apply the Dirichlet boundary
+condition:
+V ¼ V0 (2)
+After assembling the global matrix and applying the boundary
+conditions, the system was solved numerically to obtain the distribution
+in the EF of a single direction. The average EF norm was calculated from
+the three orthogonal ﬁeld components using Eq. ( 3):
+E ¼
+ﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃﬃ
+E
+2
+x þ E2
+y þ Ez2
+q
+(3)
+H. Luo et al.
+2881
+Molecular Psychiatry (2025) 30:2880 – 2890
+
+where x, y, and z represent three orthogonal directions.
+Finally, to compare EFs between subjects, the locations of individual
+contact were non-linear and transformed to MNI space. The EF
+distributions simulated during peak current were extracted and displayed
+on a surface view. A perspective version allowed us to see EF intensity
+distribution in the hippocampus and amygdala.
+Real electric ﬁeld calculation based on LFP
+The real EF was obtained by calculating the gradient of the voltage
+measured on each contact of the same SEEG electrode. Speci ﬁcally, the
+procedure included four steps: (a) An 8 s segment of the raw LFP
+(monopolar signal) during full-intensity stimulation and without visible
+artifacts was selected for calculating the EF. (b) A baseline correction was
+performed on the selected segment signal to avoid potential DC offset and
+artifacts by subtracting the mean of a 2 s window right before the
+stimulation. (c) A fast Fourier transform (FFT) was applied to the signal and
+the two-sided power spectrum was converted to a single-sided power
+spectrum. The number of points at which the FFT was performed (nfft) is
+2048. Then, the absolute value of the single-sided power spectrum was
+normalized by dividing nfft/2 (nfft for 0 Hz), yielding the amplitude of each
+frequency point. The amplitude of stimulation was taken to be the
+maximum value around ±2 Hz of stimulation frequency. (d) Finally, the
+stimulation amplitudes of contacts in the same electrode were used to
+calculate the gradient, and this calculation was repeated for all SEEG
+electrodes.
+The gradient calculated the central difference for interior data points.
+For example, consider an electrode with unit-spaced, voltage of contact A
+i,
+that has a horizontal gradient G = gradient(A). The interior gradient values,
+Gi, are:
+Gi ¼ 0:5 /C3ð Aiþ1 /C0 Ai/C0 1Þ (4)
+Where i varies between 2 and N-1, and N is the number of contacts of the
+electrode.
+The gradient values of the contact at the edges of the electrode are
+calculated with single-sided differences so that
+G1 ¼ A2 /C0 A1 (5)
+GN ¼ AN /C0 AN/C0 1 (6)
+We tested this algorithm on a simulated sine wave signal and proved it
+could calculate the actual peak amplitude of a sine wave (See Appendix 2.
+“Algorithm of Peak Amplitude Calculating ” in the Supplementary Material).
+It should be noted that to calculate the actual EF, the voltage gradient
+needs to be divided by the distance between the contacts, which was
+3.5 mm in this study.
+Signal preprocessing
+The raw LFPs were ﬁrst divided into pre-stimulation, during-stimulation
+(only full-intensity part 70 s), and post-stimulation segments. The steps
+for LFP data preprocessing were as follows: (a) Each electrode was
+converted to bipolar by differentiating the signals of two adjacent
+contacts on the electrodes. (b) Low-pass ﬁltering was performed at
+200 Hz with a Chebyshev Type I ﬁlter to rule out LFP oscillatory activities
+not of interest. (c) High-pass ﬁltering was performed at 1 Hz with a
+Chebyshev Type I ﬁlter to eliminate baseline shifting. (d) Sinusoid removal
+was performed (only for during-stimulation segments). This process
+eliminates stimulus artifacts by identifying the sinusoidal components
+and subtracting them from the signals in the same time domain
+(Supplementary Fig. 1). (e) Data was down-sampled to 1000 Hz to reduce
+storage space and enhance computational ef ﬁciency. (f) The continuous
+data was segmented into non-overlapping, ﬁxed 2-second time windows.
+Then, two epileptologists (XLY and LHC) visually screened all epochs
+separately to identify and remove epileptiform discharges and other
+artifacts that appeared intermittently. To reduce potential bias, only
+epochs that both epileptologists agreed were free of artifacts were
+included in further analysis. The surviving epoch rate was de ﬁned as the
+proportion of epochs available for analysis relative to the total number of
+epochs recorded in each trial.
+Subsequently, the preprocessed segmented LFP data between 1 and
+200 Hz were decomposed into seven different frequency-band oscillations:
+delta ( δ,1 –4 Hz), theta ( θ,4 –8 Hz), alpha ( α,8 –12 Hz), beta ( β,1 2 –30 Hz),
+low-gamma (lγ,3 0–60 Hz), high-gamma (hγ,6 0–90 Hz), and ultra-frequency
+(u, 90 –200 Hz). The analysis of the LFP data was performed of ﬂine with
+custom-developed scripts in MATLAB (MathWorks Inc., Natick, MA, USA).
+Power change ratio calculation
+The power spectra density (PSD) of each epoch was calculated using a FFT
+with a 2 s sliding window and a 1 s overlap. To reduce the in ﬂuence of
+inter-individual variability, the PSD was normalized by dividing the values
+by the integral power between 1 and 200 Hz. Finally, for each channel, the
+normalized PSD values of all epochs were averaged, and the power of each
+oscillation was the area under the curve within its frequency range. Next,
+we calculated the power change ratios of during- and post-stimulation
+relative to the baseline to represent the neural oscillations induced by
+tACS. The power change ratio was calculated as follows: (PSD of during-
+stimulation or PSD of post-stimulation minus PSD of pre-stimulation)
+divided by the PSD of pre-stimulation, multiplied by 100%.
+Analyzing the effect of tACS on oscillations
+To check for an overall change during- and post-stimulation, we initially
+combined the data under all the stimulating montages and frequencies,
+then used a threshold of 5% change rate to categorize the neural
+oscillations induced by tACS into three response types: facilitated (power
+change ratio >5%), inhibited (power change ratio < −5%), and no response
+(power change ratio within [ −5 to 5%]). We assessed whether the
+distribution of different response types differed between during- and post-
+stimulation using Chi-square tests on data from the hippocampus and
+amygdala. Additionally, we also examined other thresholds (10, 20, 30, and
+40%) to ensure the reproducibility of the results.
+To identify the speci ﬁc effect of tACS at different frequencies on neural
+oscillations, we ﬁrst divided the participants into two groups according to
+the relative locations of the recording and stimulating electrodes to control
+the confounding factor related to the position of the stimulating
+electrodes. Subsequently, statistical analysis was performed individually
+to evaluate the neural response of each frequency band at each
+stimulation frequency in each group. For each statistical test, the
+distribution of the data was examined ﬁrst to help choose the appropriate
+statistical method. If the data conformed to the normal distribution
+(Shapiro-Wilks normality test), a one-sample t-test was performed;
+otherwise, the Wilcoxon signed-rank test was used. Here, the null
+hypothesis was that tACS did not affect neural oscillations, whereas the
+alternative hypothesis was that tACS signi ﬁcantly affected neural
+oscillations.
+State-dependent analysis
+To investigate the relationship between the effect of tACS and the original
+brain state of participants, we further calculated the correlation between
+the PSD of pre-stimulation and the power change ratio of during- or post-
+stimulation. The Spearman test was applied to evaluate each correlation
+since most data did not conform to the normal distribution. For all
+statistical tests, the signi ﬁcance levels were set to p < 0.01, and all reported
+p-values were corrected for multiple comparisons using the FDR
+correction.
+RESULTS
+In total, eight epileptic patients (six females, two males, age range
+16–48; more information is included in Table 1) with electrodes in
+the amygdala or the head of the hippocampus participated. All
+participants were right-handed, did not evidence cognitive
+impairment (MoCA score >20), and had no neurological or
+psychiatric disorders other than epilepsy. Participants were off
+medication for at least 12 h at the time of testing. Participants
+were seizure-free for 12 h before and during the test. As shown in
+Fig. 1b, there were 6 electrodes in the head of the hippocampus
+(one electrode was excluded since it was in the seizure zone, so
+we ultimately analyzed 16 channels of bipolar recordings from 21
+contacts in 5 electrodes) and 8 electrodes in the amygdala (25
+channels of bipolar recording from 33 contacts).
+Electric ﬁeld distribution
+This study focused on two montages (F3-Fp2 and F4-Fp1) over the
+prefrontal cortex (as shown in Fig. 1a). We ﬁrst calculated the EF
+H. Luo et al.
+2882
+Molecular Psychiatry (2025) 30:2880 – 2890
+
+distribution at the current electrode location based on an
+individual computation model (Fig. 1d), which indicated there
+may be a direct impact on the subcortical region with 2 mA tACS
+stimulation (and for Sub001 with 1.5 mA tACS stimulation). Then,
+we measured the EF magnitudes that reached the hippocampus
+and amygdala based on the real recordings (Fig. 1b). At 2 mA
+intensity, we obtained peak EF magnitudes of 0.099 V/m in the
+hippocampus and 0.147 V/m in the amygdala. The EF magnitudes ’
+mean ± standard deviation (SD) in these two regions were
+0.051 ± 0.022 and 0.062 ± 0.024 V/m, respectively. For each parti-
+cipant, the measured and estimated values of the EF magnitudes
+in the hippocampus and amygdala were close (as shown in Fig. 1e,
+there was a similarity between the colors of the electrode contacts
+and the background color). Moreover, as shown in Fig. 1c, the EF
+magnitudes showed a good correlation between the measured
+and estimated values ( r = 0.505, p = 0.000097); all these values are
+listed in Supplementary Table 1. Notably, we found that greater
+stimulation frequency induced the weaker EF magnitudes in the
+hippocampus and amygdala (Supplementary Fig. 2). These results
+indicated that non-invasive brain stimulation might reach
+subcortical regions and have the potential to modulate their
+neural activity directly.
+Modulatory effects of tACS in distinct brain regions
+We next compared the LFPs during and after stimulation to
+baseline (pre-stimulation). The scheme is shown in Fig. 2a. tACS
+may either facilitate or inhibit the activity level of speci ﬁc neural
+oscillations acutely and with lasting effects. We ﬁrst investigated
+the different effects of tACS on the hippocampus and amygdala
+by calculating the power change ratio of each oscillation during-
+Sub001 Sub008Sub002 Sub003 Sub004 Sub005 Sub006 Sub007
+cba
+d
+e
+0.00
+0.10
+0.20
+0.00
+0.07
+0.14
+Estimated EF (V/m)
+0.05 0.06 0.07 0.08
+0.04
+0.06
+0.08
+0.10
+0.12mean Measured EF (V/m)
+Fig. 1 Experimental setup and electric ﬁelds in hippocampus and amygdala. a Schematic illustrating transcranial alternating current
+stimulation (tACS), a non-invasive brain stimulation technique. b The implantation sites of the intracranial electrodes rendered onto MNI
+space. The colored dots indicate the contact in each region, and the differential signal of the two contacts is a channel signal. Blue dots
+indicate the contacts in the amygdala, and purple dots indicate the contacts in the head of the hippocampus. c The correlation between the
+measured and estimated electric ﬁeld (EF). d The individual EF distribution estimated during peak current at their montages. e The individual
+EF distribution in the hippocampus and amygdala. See also Supplementary Table 1 and Supplementary Fig. 2.
+Table 1. Patient demographics.
+No. Gender Age
+(year)
+Education (year) Diagnosed
+epileptogenic zone
+Handedness MOCA
+Sub001 Male 16 9 L Inferior Temporal Right 20
+Sub002 Female 32 15 R Operculum Right 28
+Sub003 Male 25 16 L Hippocampus Right 21
+Sub004 Female 19 12 L Middle-posterior Temporal Right 24
+Sub005 Female 48 9 R Hippocampus Right 20
+Sub006 Female 30 12 R Prefrontal Right 24
+Sub007 Female 19 15 R Rolandic Right 26
+Sub008 Female 23 16 L Parietooccipital sulcus Right 27
+H. Luo et al.
+2883
+Molecular Psychiatry (2025) 30:2880 – 2890
+
+and post-stimulation compared to pre-stimulation. Then, we
+divided the neural oscillations according to how they responded
+to tACS: those that were facilitated (power change ratio > 5%),
+inhibited (power change ratio < −5%), and had no response
+(power change ratio within [ −5 to 5%]). We combined all the
+stimulus montages and stimulus frequencies for this analysis to
+check for overall variation. As shown in Fig. 2b, c, the distribution
+of the three response types during- and post-stimulation in the
+hippocampus and amygdala were similar, but the hippocampus
+showed a more pronounced, lasting effect on the oscillation
+activity that it facilitated.
+In the hippocampus (Fig. 2b), during stimulation 35.4% of
+oscillations were facilitated, 41.5% inhibited, and 23.1% no
+response. However, after stimulation, the proportion of facilitated
+oscillations increased to 44.7% while the inhibition rate decreased
+to 29.0%, and the no-response rate had a relatively small increase
+to 26.3%. The chi-square test indicated a signi ﬁcant difference in
+the distribution of response types between the during- and post-
+stimulation periods, χ² (2, N = 896) = 31.96, p < 0.001. In the
+amygdala (Fig. 2c), the proportions during stimulation were 37.2%
+facilitated, 38.6% inhibited, and 24.2% no response. After
+stimulation, they became 39.3, 32.9, and 27.8%, respectively. The
+chi-square test also indicated a signi ﬁcant difference in the
+distribution of response types between the during- and post-
+stimulation periods, χ² (2, N = 1400) = 10.45, p = 0.005. Consistent
+results were obtained using different thresholds (10, 20, 30, and
+40%) to de ﬁne response types in the hippocampus and amygdala
+(Supplementary Fig. 3).
+The effectiveness of tACS is closely related to the position of
+the stimulating electrodes. Therefore, we divided the participants
+into two groups according to the location of the stimulating
+electrode: one group with the recording electrode ipsilateral to
+the stimulating electrode placed at F3/F4, and another group
+with the recording electrode ipsilateral to the stimulating
+electrode placed at Fp1/Fp2 (Table 2). Then, we performed a
+statistical test on the effects of different frequencies of tACS on
+the two groups ’ hippocampus and amygdala oscillations. For the
+hippocampus (Fig. 3), when the electrode was ipsilateral to F3/F4,
+we only observed signi ﬁcant inhibition of high-frequency
+oscillations including low-gamma, high-gamma, and ultra-
+frequency band oscillations during 20 Hz tACS (Fig. 3c); when
+ipsilateral to the Fp1/Fp2, we observed signi ﬁcant facilitation of
+the theta oscillation during 5 Hz tACS (Fig. 3e) and a wide range
+of oscillatory changes both during and after 10 Hz tACS (Fig. 3f).
+Facilitated
+Inhibited
+No response
+Amygdala
+during stimulation
+37.2 %
+38.6 %
+24.2 %
+Amygdala
+post stimulation
+39.3 %
+32.9 %
+27.8 %
+c
+44.7 %
+29.0 %
+26.3 %
+Hippocampus
+post stimulation
+35.4 %
+41.5 %
+23.1 %
+Hippocampus
+during stimulation
+b
+10s20uV
+Frequency (Hz)
+10s30uV
+10s150uV
+Pre-tACS   During-tACS   Post-tACS
+Oscillations inhibited during- and post-tACS
+Oscillations facilitated during- and post-tACSFrequency (Hz)
+a
+Fig. 2 Characterization of tACS response properties in hippocampus and amygdala. a Illustrations of the power change in neural
+oscillations during- and post-stimulation compared with the pre-stimulation baseline. b, c, Lasting effect of tACS responses in the
+hippocampus and amygdala, which are indexed by the consistency between the relative power change during- and post-stimulation relative
+to baseline. See also Supplementary Fig. 3.
+H. Luo et al.
+2884
+Molecular Psychiatry (2025) 30:2880 – 2890
+
+All results pertaining to the hippocampus are summarized in
+Fig. 3i.
+For the amygdala (Fig. 4), whether ipsilateral to F3/F4 or Fp1/Fp2,
+the signi ﬁcant changes always occurred sporadically, and in
+response to both 10 and 40 Hz tACS. When ipsilateral to F3/F4,
+the theta, high-gamma, and ultra-frequency band oscillations
+during 10 Hz tACS (Fig. 4b) and the beta and ultra-frequency band
+oscillations during 40 Hz tACS (Fig. 4d) were both inhibited. When
+ipsilateral to the Fp1/Fp2, only alpha oscillation during 10 Hz tACS
+(Fig. 4f) and the low-gamma and ultra-frequency band oscillations
+after 40 Hz tACS (Fig. 4h) were facilitated. All results pertaining to
+the amygdala are summarized in Fig. 4i.
+These results indicated that the neural oscillations in the
+hippocampus respond strongly and stably to 10 Hz stimulation,
+speciﬁcally when the recording electrodes were ipsilateral to Fp1/
+Fp2. Furthermore, we investigated the potential after-effects of the
+transient tACS procedure. When directly comparing the effects of
+during- and post-stimulation, we only observed consistently
+signiﬁcant changes in the hippocampus (Fig. 3i), not in the
+amygdala (Fig. 4i). For example, oscillations underwent signi ﬁcant
+changes during 10 Hz tACS and further intensi ﬁed after the
+stimulation in the hippocampus but tended to weaken after the
+stimulation in the amygdala (Supplementary Fig. 4). The observed
+discrepancy between the response of the hippocampus and
+amygdala aligns with the results presented in Fig. 2b, c, and it
+can be attributed to the hippocampus exhibiting a more consistent
+response to 10 Hz stimulation.
+State-dependent effects of tACS
+We further examined whether the power change ratios of neural
+oscillations during- or post-stimulation were associated with their
+innate activity level pre-stimulation, i.e., state-dependent
+responses. In the hippocampus, signi ﬁcant relationships were
+only found between power change ratios after 10 Hz tACS and the
+corresponding oscillation activity level pre-stimulation (Fig. 5a).
+The four types of oscillation for which we found signi ﬁcant
+relationships were ultra-frequency ( r = −0.601, p = 0.003), beta
+(r = −0.568, p = 0.003), high-gamma ( r = −0.501, p = 0.007), and
+alpha ( r = −0.500, p = 0.006) (Fig. 5c–f). These state-dependent
+responses were consistent with the broad response during and
+after 10 Hz tACS. At 5, 20, and 40 Hz tACS, no state-dependent
+responses were found for any type of oscillation.
+For the amygdala, we observed broad state-dependent
+responses during and after 10, 20, and 40 Hz tACS (Fig. 5b). The
+signiﬁcant correlation coef ﬁcients ranged from −0.653 to −0.353.
+The four oscillations with the strongest correlations were alpha
+during 20 Hz tACS ( r = −0.653), low-gamma during 40 Hz tACS
+(r = −0.619), alpha after 10 Hz tACS ( r = −0.570) and beta after
+10 Hz tACS ( r = −0.527) (Fig. 5g–j, all p < 0.001). However, most of
+these state-dependent responses did not persistently follow the
+stimulation, which might potentially be due to the short
+stimulation period. Complete information on the relationships
+between the effects of tACS on neural oscillations and the pre-
+stimulus level of oscillation can be found in Supplementary
+Figs. 5 and 6.
+DISCUSSION
+In summary, here we present evidence in the live human brain that
+10 Hz tACS may induce the most pronounced effect on neural
+oscillations, especially in the hippocampus. These ﬁndings not only
+validate that the current of a generalized tACS protocol can reach
+human deep brain regions, but also establish that it can modulate
+the activity of their neural oscillations, which may be the key to the
+ability of tACS to improve cognitive function and ameliorate
+disease states [ 19]. The oscillatory changes we observed in the
+hippocampus and amygdala can be summarized in two response
+patterns: 1) low- and high-frequency neural oscillations appeared
+to behave distinctly in response to stimulation, and 2) oscillations
+were more responsive to tACS when the recording site was near
+the mPFC (Fp1/Fp2). Furthermore, we found that neural oscillations
+showed a wide range of state-dependent responses to tACS and in
+its aftermath. When the baseline activity of the brain was stronger,
+the response to tACS was weaker, which suggests that a stronger
+stimulation current may be required. Notably, we identi ﬁed the
+rather speci ﬁc effects of 10 Hz tACS on the hippocampus, which
+warrant future investigations related to the behavioral changes this
+effect could induce.
+Potential mechanisms of 10 Hz tACS-speci ﬁc modulation of
+hippocampal neural activity
+Previous studies have shown that the EF intensity is key to
+successfully modulating brain function [ 31]. Studies in mice and
+non-human primates suggest that 0.3 V/m EF may be the
+Table 2. Information of recording and signal analysis.
+No. Montage tACS
+Intensity
+Recording
+regions
+Number of
+channels
+Analysis groups Survived epoch rate (%)
+(Mean + SD)
+Pre During Post
+Sub001 F4-FP1 1.5 mA L Amygdala 5 Ipsilateral to
+FP1/FP2
+73.3 ± 8.5 93.8 ± 2.8 72.7 ± 13.5
+L Hippocampus 4
+Sub002 F4-FP1 2 mA R Amygdala 4 Ipsilateral to
+F3/F4
+54.4 ± 8.8 68.4 ± 17.0 55.8 ± 8.6
+R Hippocampus 3
+Sub003 F3-FP2 2 mA L Amygdala 2 Ipsilateral to
+F3/F4
+90.8 ± 4.1 96.6 ± 3.0 89.4 ± 3.2
+Sub004 F4-FP1 2 mA L Amygdala 2 Ipsilateral to
+FP1/FP2
+67.5 ± 7.0 77.2 ± 7.4 71.0 ± 10.4
+L Hippocampus 3
+Sub005 F3-FP2 2 mA R Amygdala 3 Ipsilateral to
+FP1/FP2
+38.3 ± 6.3 51.3 ± 24.1 40.4 ± 9.5
+Sub006 F3-FP2 2 mA R Amygdala 4 Ipsilateral to
+FP1/FP2
+67.7 ± 12.3 74.3 ± 12.7 61.2 ± 12.8
+R Hippocampus 3
+Sub007 F4-FP1 2 mA L Amygdala 1 Ipsilateral to
+FP1/FP2
+88.3 ± 3.1 96.6 ± 2.1 93.8 ± 3.2
+Sub008 F3-FP2 2 mA L Amygdala 4 Ipsilateral to
+F3/F4
+49.7 ± 8.8 60.8 ± 8.0 55.2 ± 9.8
+L Hippocampus 3
+H. Luo et al.
+2885
+Molecular Psychiatry (2025) 30:2880 – 2890
+
+minimum effective dose for tACS [ 20]. The present study found
+that EFs reaching the hippocampus and amygdala were in the
+range of 0.03 –0.1 V/m. These values are lower than those reported
+in a previous study, when stimulation electrodes were placed on
+the temporal lobe (i.e., FT9-FT10 or T7-C4 or C3-FT10 montages),
+which found the mean and SD of EF under 1 mA stimulation were
+0.17 ± 0.06 and 0.21 ± 0.08 V/m [ 32]. On the other hand, our values
+are higher than those found when stimulation electrodes were
+Fig. 3 Relative power change of the neural oscillations in the hippocampus during- and post-stimulation with tACS at different
+stimulation frequencies. Results are grouped by the relative position between the recording and stimulation electrodes and shown in
+a–d, ipsilateral to F3/F4, and e–h, ipsilateral to Fp1/Fp2, respectively. Each dot represents one channel of bipolar recording and there were 16
+channels in total. i Summary of the signi ﬁcance and direction of the oscillation changes. The statistical signi ﬁcance level was set at 0.01 and
+corrected for multiple comparisons using the FDR correction. It can be seen that the neural oscillations in the hippocampus responded mainly
+to 10 Hz tACS and they were consistent between the during-stimulation and post-stimulation periods. See also Supplementary Fig. 4a.
+H. Luo et al.
+2886
+Molecular Psychiatry (2025) 30:2880 – 2890
+
+placed on the frontal and central lobe (i.e., Fz-C3 or Fz-C4), for
+which the mean and SD of EF under 1 mA stimulation measured in
+the amygdala were around 0.05 –0.08 V/m [ 32]. The results of all
+studies illustrate that the strength of the EF reaching the
+hippocampus and amygdala is closely dependent on the
+proximity of the stimulating electrode, and viewed in this larger
+context of the literature, we ﬁnd that our results are within a
+reasonable range.
+Fig. 4 Relative power change of the neural oscillations in the amygdala during- and post-stimulation with tACS at different stimulation
+frequencies. Results are grouped by the relative position between the recording and stimulation electrodes and shown in a–d, ipsilateral to
+the F3/F4, and e–h, ipsilateral to Fp1/Fp2, respectively. Each dot represents one channel of bipolar recording and there were 25 channels in
+total. i Summary of the signi ﬁcance and direction of the oscillation changes. The statistical signi ﬁcance level was set at 0.01 and corrected for
+multiple comparisons using the FDR correction. It can be seen that the neural oscillations in the amygdala responded in a dispersed manner
+and were not consistent between the during- and post-stimulation periods. See also Supplementary Fig. 4b.
+H. Luo et al.
+2887
+Molecular Psychiatry (2025) 30:2880 – 2890
+
+The present study showed that 10 Hz mPFC tACS was able to
+effectively modulate neural oscillatory activities in the hippocam-
+pus even with such a low EF. Therefore, to verify whether this was
+a direct effect of the tACS, we calculated the correlation between
+the EF intensity induced by F3/F4 or Fp1/Fp2 tACS and the power
+change rate in the hippocampus and amygdala during- and post-
+stimulation. As shown in Supplementary Fig. 8, for mPFC
+stimulation, only the EF intensity of 5 Hz tACS was signi ﬁcantly
+correlated with the power change of oscillations during stimula-
+tion in the hippocampus, whereas 10 Hz tACS was signi ﬁcantly
+correlated with the power change of oscillations post-stimulation.
+For DLPFC stimulation, only the EF intensity of 40 Hz tACS was
+signiﬁcantly correlated with the power change of oscillations
+during stimulation in the hippocampus. However, no signi ﬁcant
+relationship was found between changes in neural activity in the
+amygdala and EF intensity. These results suggest that tACS has the
+potential to directly modulate hippocampal function even with
+only relatively weak electrical stimulation conducted from the
+scalp. But at the same time, these results also prove that the
+phenomena we reported in this study largely cannot be explained
+by the direct effect of EF.
+The neural response observed in the hippocampus may also
+result from large-scale network-level interactions between many
+brain regions, as neuroimaging studies have reported that the
+connectivity of the default mode network, in which mPFC acts as a
+critical region, may be speci ﬁcally enhanced by 10 Hz tACS
+[33, 34]. A Transcranial Magnetic Stimulation (TMS) intervention
+study further suggested that the mPFC-hippocampal network
+plays an important role in neuromodulation for treating psychia-
+tric disorders [ 24]. The same study found that DLPFC TMS
+ameliorated depression based on effective modulation of
+hippocampal function, and that this improvement was mediated
+by the mPFC. Consistent with our results, the results of this study
+also indicated that the mPFC may be a better target for treating
+depression [ 35]. We analyzed the electrodes inserted into the
+mPFC (23 channels of bipolar recordings from 28 contacts) and
+found that there was a signi ﬁcant response to tACS at all
+frequencies in the mPFC, with the most persistent stimulatory
+effect using 40 Hz tACS, and this response extended beyond the
+end of the stimulation (Supplementary Fig. 7). These results
+suggest that a network containing the mPFC and the hippocam-
+pus may work like a frequency ﬁlter, delivering information of a
+speciﬁc frequency (10 Hz) to the hippocampus.
+The potential mechanisms of state-dependent tACS effects
+The state-dependent neural response observed in the hippocam-
+pus was largely consistent with its broad response to 10 Hz tACS,
+especially post-stimulation. In contrast, the state-dependent
+responses observed in the amygdala differed from its frequency
+response, occurring in a dispersed manner and showing extensive
+state-dependent alterations. These differences between the
+hippocampus and amygdala may be due to their responses to
+Post-tACS
+During-tACS
+Positive corr
+Negative corr
+tACS δθαβl γ h γ u
+40 Hz
+20 Hz
+10 Hz
+5H z
+State dependence effect in amygdalab
+δθαβl γ h γ utACS
+5H z
+10 Hz
+20 Hz
+40 Hz
+State dependence effect in hippocampusa
+0.0 0.2 0.4 0.6 0.8 1.0
+-50
+0
+50
+100
+150
+200
+Baseline Power
+Power change rates  (%)
+r =-0.601
+Post
+ultra oscillation changes after 10Hz tACS
+0 5 10 15 20
+-100
+-50
+0
+50
+100
+150
+Baseline Power
+Power change rates  (%)
+-0.653
+During
+r =
+ oscillation changes during 20Hz tACS
+0 5 10 15 20 25
+-50
+0
+50
+100
+150
+Baseline Power
+-0.568
+Post
+r =
+ oscillation changes after 10Hz tACS
+0 5 10 15 20
+-100
+-50
+0
+50
+100
+150
+200
+Baseline Power
+-0.527
+Post
+r =
+ oscillation changes after 10Hz tACS
+0.0 0.5 1.0 1.5 2.0 2.5
+-50
+0
+50
+100
+150
+Baseline Power
+-0.501
+Post
+r =
+high oscillation changes after 10Hz tACS
+02468 1 0
+-20
+0
+20
+40
+60
+Baseline Power
+-0.500
+Post
+r =
+ oscillation changes after 10Hz tACS
+0 5 10 15
+-200
+0
+200
+400
+Baseline Power
+-0.619
+During
+r =
+low oscillation changes during 40Hz tACS
+0 5 10 15 20
+-60
+-40
+-20
+0
+20
+40
+60
+Baseline Power
+-0.570
+Post
+r =
+ oscillation changes after 10Hz tACS
+ce df
+gi hj
+Fig. 5 State-dependence of the neural responses to tACS in the hippocampus and amygdala. a , b Summary of the signi ﬁcance and
+direction of the state-dependent effect. See also Supplementary Figs. 5 –6. The four scatter plots with the most signi ﬁcant absolute values of
+the correlation coef ﬁcients in c–f for the hippocampus and g–j for the amygdala are listed in descending order. The level of statistical
+signiﬁcance was set at 0.01 and corrected for multiple comparisons using the FDR correction. In a and b, the green color means remarkable
+negative relationship and the red color means remarkable positive relationship, the signi ﬁcant level was p < 0.01. The state-dependent
+response in the hippocampus was largely consistent with its broad response to 10 Hz tACS, especially after tACS. The amygdala showed a
+wide range of state-dependent responses, but most neural oscillations did not signi ﬁcantly change during- or post-stimulation.
+H. Luo et al.
+2888
+Molecular Psychiatry (2025) 30:2880 – 2890
+
+the current stimulus pattern. For the hippocampus, the modula-
+tory effect is predictably in ﬂuenced by its current state, since
+10 Hz tACS at Fp1/Fp2 can signi ﬁcantly modulate neural
+oscillatory activity in the hippocampus. The state-dependent
+effects observed in the hippocampus can be explained by the fact
+that the modulation of brain regions by exogenous physical ﬁelds
+(EFs or oscillations from other regions) is in ﬂuenced by their
+endogenous level of neural activity. And the effect is manifested
+only if the exogenous physical ﬁeld can successfully modulate
+otherwise it is submerged in the autonomic activity of the target
+region. Whereas the endogenous activity of the amygdala is more
+inﬂuenced by its own level of activity as the current tACS protocol
+can not effectively regulate its activity, thus showing a broader
+state dependence.
+Limitations
+There are several limitations to this study. First, our participants
+were epileptic patients, and the number of participants was
+relatively small. We made many efforts to maximize the possibility
+of extending our ﬁndings to a broader population by ensuring
+that participants were not taking medication, excluding data
+recorded from an epileptic focus, and removing the epochs with
+epileptiform discharges. Second, because the participants experi-
+enced skin sensations, as is normally reported with tACS, it cannot
+be ruled out that neural oscillations may be in ﬂuenced by
+individual attention and/or changes in feelings brought about by
+these sensations. However, since the participants experienced skin
+sensations at each stimulation frequency, this could not explain
+the frequency-speci ﬁc phenomenon of stable neural oscillation
+changes observed only with 10 Hz stimulation. Third, the results of
+the present study only highlight that prefrontal tACS can affect
+neural oscillations in the hippocampus, while the mechanism
+underlying this phenomenon still needs to be resolved by
+collecting data from more patients and recording more locations.
+Furthermore, a lack of single-neuron activity recording limits our
+interpretation of the mechanism. Last but not least, future
+investigations should probe the effects of longer tACS protocols
+(e.g., 20 min), which are more clinically relevant in treating
+neurological and psychiatric patients.
+In conclusion, here we establish frequency-tuned and state-
+dependent neural responses as intracranial physiological mechan-
+isms induced by non-invasive brain stimulation. The ﬁndings may
+inspire the innovation and optimization of brain stimulation
+therapy for neurological and psychiatric diseases.
+DATA AVAILABILITY
+The data that support the ﬁndings of this study are openly available at the Open
+Science Foundation repository ( https://doi.org/10.17605/OSF.IO/G9BCT).
+REFERENCES
+1. Polanía R, Nitsche MA, Ruff CC. Studying and modifying brain function with non-
+invasive brain stimulation. Nat Neurosci. 2018;21:174 –87.
+2. Grover S, Nguyen JA, Reinhart RMG. Synchronizing brain rhythms to improve
+cognition. Annu Rev Med. 2021;72:29 –43.
+3. Krause MR, Vieira PG, Csorba BA, Pilly PK, Pack CC. Transcranial alternating current
+stimulation entrains single-neuron activity in the primate brain. Proc Natl Acad
+Sci USA. 2019;116:5747 –55.
+4. Axmacher N, Henseler MM, Jensen O, Weinreich I, Elger CE, Fell J. Cross-frequency
+coupling supports multi-item working memory in the human hippocampus. Proc
+Natl Acad Sci USA. 2010;107:3228 –33.
+5. Grover S, Wen W, Viswanathan V, Gill CT, Reinhart RMG. Long-lasting, dissociable
+improvements in working memory and long-term memory in older adults with
+repetitive neuromodulation. Nat Neurosci. 2022;25:1237 –46.
+6. Zhou D, Li A, Li X, Zhuang W, Liang Y, Zheng C-Y, et al. Effects of 40 Hz tran-
+scranial alternating current stimulation (tACS) on cognitive functions of patients
+with Alzheimer ’s disease: a randomised, double-blind, sham-controlled clinical
+trial. J Neurol Neurosurg Psychiatry. 2022;93:568 –70.
+7. Benussi A, Cantoni V, Grassi M, Brechet L, Michel CM, Datta A, et al. Increasing
+brain gamma activity improves episodic memory and restores cholinergic dys-
+function in Alzheimer ’s disease. Annu Neurol. 2022;92:322 –34.
+8. Simons JS, Ritchey M, Fernyhough C. Brain mechanisms underlying the subjective
+experience of remembering. Annu Rev Psychol. 2022;73:159 –86.
+9. Tavakoli AV, Yun K. Transcranial alternating current stimulation (tACS) mechan-
+isms and protocols. Front Cell Neurosci. 2017;11:214.
+10. Underwood E. Cadaver study challenges brain stimulation methods. Science.
+2016;352:397.
+11. Opitz A, Falchier A, Linn GS, Milham MP, Schroeder CE. Limitations of ex vivo
+measurements for in vivo neuroscience. Proc Natl Acad Sci. 2017;114:5243 –6.
+12. Gallen CL, D ’Esposito M. Brain modularity: a biomarker of intervention-related
+plasticity. Trends Cognit Sci. 2019;23:293 –304.
+13. Johnson L, Alekseichuk I, Krieg J, Doyle A, Yu Y, Vitek J, et al. Dose-dependent
+effects of transcranial alternating current stimulation on spike timing in awake
+nonhuman primates. Sci Adv. 2020;6:eaaz2747.
+14. Huang WA, Stitt IM, Negahbani E, Passey DJ, Ahn S, Davey M, et al. Transcranial
+alternating current stimulation entrains alpha oscillations by preferential phase
+synchronization of fast-spiking cortical neurons to stimulation waveform. Nat
+Commun. 2021;12:3151.
+15. Helfrich RF, Schneider TR, Rach S, Trautmann-Lengsfeld SA, Engel AK, Herrmann
+CS. Entrainment of brain oscillations by transcranial alternating current stimula-
+tion. Curr Biol. 2014;24:333 –9.
+16. Kurmann R, Gast H, Schindler K, Fröhlich F. Rational design of transcranial
+alternating current stimulation: identi ﬁcation, engagement, and validation of
+network oscillations as treatment targets. Clin Transl Neurosci. 2018;2:33.
+2514183×18793515.
+17. Bradley C, Nydam AS, Dux PE, Mattingley JB. State-dependent effects of
+neural stimulation on brain function and cognition. Nat Rev Neurosci.
+2022;23:459–75.
+18. Lafon B, Henin S, Huang Y, Friedman D, Melloni L, Thesen T, et al. Low frequency
+transcranial electrical stimulation does not entrain sleep rhythms measured by
+human intracranial recordings. Nat Commun. 2017;8:1199.
+19. Lee TL, Lee H, Kang N. A meta-analysis showing improved cognitive performance
+in healthy young adults with transcranial alternating current stimulation. npj Sci
+Learn. 2023;8:1.
+20. Wischnewski M, Alekseichuk I, Opitz A. Neurocognitive, physiological, and bio-
+physical effects of transcranial alternating current stimulation. Trends Cognit Sci.
+2023;27:189–205.
+21. Chen S, Tan Z, Xia W, Gomes CA, Zhang X, Zhou W, et al. Theta oscillations
+synchronize human medial prefrontal cortex and amygdala during fear learning.
+Sci Adv. 2021;7:eabf4198.
+22. Zheng J, Stevenson RF, Mander BA, Mnatsakanyan L, Hsu FPK, Vadera S, et al.
+Multiplexing of theta and alpha rhythms in the amygdala-hippocampal
+circuit supports pattern separation of emotional information. Neuron.
+2019;102:887–98.
+23. Pacheco Estefan D, Sánchez-Fibla M, Duff A, Principe A, Rocamora R, Zhang H,
+et al. Coordinated representational reinstatement in the human hippocampus
+and lateral temporal cortex during episodic memory retrieval. Nat Commun.
+2019;10:2255.
+24. Han S, Li XX, Wei S, Zhao D, Ding J, Xu Y, et al. Orbitofrontal cortex-hippocampus
+potentiation mediates relief for depression: a randomized double-blind trial and
+TMS-EEG study. Cell Rep Med. 2023;4:101060.
+25. Fischl B, Salat DH, Busa E, Albert M, Dieterich M, Haselgrove C, et al. Whole brain
+segmentation: automated labeling of neuroanatomical structures in the human
+brain. Neuron. 2002;33:341 –55.
+26. Brunyé TT, Beaudoin ME, Feltman KA, Heaton KJ, McKinley RA, Vartanian O et al.
+Neuroenhancement in military personnel: conceptual and methodological pro-
+mises and challenges. In: NATO Symposium on Applying Neuroscience to Perfor-
+mance: From Rehabilitation to Human Cognitive 2021 , Rome, Italy, 11-12 October
+2021. 2022
+27. Higgins N, Forlini C, Butorac I, Gardner J, Carter A. Anticipating the future
+of neurotechnological enhancement . In: The Routledge Handbook of the
+Ethics of Human Enhancement. New York, NY, USA: Routledge. 2024.
+p. 237 –50.
+28. Illes J, Hossain S. Neuroethics: anticipating the future. New York, NY, USA: Oxford
+University Press; 2017.
+29. Thielscher A, Antunes A, Saturnino GB. Field modeling for transcranial magnetic
+stimulation: a useful tool to understand the physiological effects of TMS? In: 2015
+37th Annual International Conference of the IEEE Engineering in Medicine and
+Biology Society (EMBC). Milan, Italy. IEEE; 2015. p. 222 –5.
+30. Puonti O, Van Leemput K, Saturnino GB, Siebner HR, Madsen KH, Thielscher A.
+Accurate and robust whole-head segmentation from magnetic resonance images
+for individualized head modeling. NeuroImage. 2020;219:117044.
+H. Luo et al.
+2889
+Molecular Psychiatry (2025) 30:2880 – 2890
+
+31. Shan Y, Wang H, Yang Y, Wang J, Zhao W, Huang Y, et al. Evidence of a large
+current of transcranial alternating current stimulation directly to deep brain
+regions. Mol Psychiatry. 2023;28:5402 –10.
+32. Louviot S, Tyvaert L, Maillard LG, Colnat-Coulbois S, Dmochowski J, Koessler L.
+Transcranial electrical stimulation generates electric ﬁelds in deep human brain
+structures. Brain Stimulation. 2022;15:1 –12.
+33. Weinrich CA, Brittain JS, Nowak M, Salimi-Khorshidi R, Brown P, Stagg CJ. Mod-
+ulation of long-range connectivity patterns via frequency-speci ﬁc stimulation of
+human cortex. Curr Biol. 2017;27:3061 –3068.e3.
+34. Clancy KJ, Andrzejewski JA, You Y, Rosenberg JT, Ding M, Li W. Transcranial
+stimulation of alpha oscillations up-regulates the default mode network. Proc
+Natl Acad Sci USA. 2022;119:e2110868119.
+35. Scangos KW, Makhoul GS, Sugrue LP, Chang EF, Krystal AD. State-dependent
+responses to intracranial brain stimulation in a patient with depression. Nat Med.
+2021;27:229–31.
+ACKNOWLEDGEMENTS
+The authors would like to acknowledge Professor Jian Jiang of Lingang Laboratory for
+supporting technical to help test the robust of tACS equipment, Hui Zheng for his
+great help in visualization and all volunteers for participating in this study.
+AUTHOR CONTRIBUTIONS
+Conceptualization: Ti-Fei Yuan, Jiwen Xu, Quanying Liu. Funding acquisition: Ti-Fei
+Yuan, Quanying Liu, Pengfei Wei, Huichun Luo. Data collection: Huichun Luo, Xiaolai
+Ye, Hui-Ting Cai, Qiangqiang Liu, Ying Xu, Ziyu Mao, Yanqing Cai, Jing Hong.
+Methodology: Huichun Luo, Xiaolai Ye, Hui-Ting Cai, Mo Wang. Writing - original draft:
+Huichun Luo, Xiaolai Ye, Hui-Ting Cai, Mo Wang, Yue Wang, Chencheng Zhang.
+Writing - review & editing: Huichun Luo, Hui-Ting Cai, Pengfei Wei, Yong Lu,
+Quanying Liu, Jiwen Xu, Ti-Fei Yuan.
+FUNDING
+This work was supported by the National Natural Science Foundation of China
+(T2394535, T2394533, 82325019, 32241015, 82401432), the Shanghai Yangfan
+Program (21YF1439700), the Science and Technology Commission of Shanghai
+Municipality (23XD1423000, 23ZR1480800, 24ZR1461000), Shanghai Municipal
+Commission of Health (2022JC016), Shanghai Municipal Education Commission -
+Gaofeng Clinical Medicine Grant Support (20181715), and Excellent Young Scientists
+Fund in Shenzhen (RCYX20231211090405003).
+COMPETING INTERESTS
+The authors declare no competing interests.
+ADDITIONAL INFORMATION
+Supplementary information The online version contains supplementary material
+available at https://doi.org/10.1038/s41380-025-02892-7.
+Correspondence and requests for materials should be addressed to Quanying Liu,
+Jiwen Xu or Ti-Fei Yuan.
+Reprints and permission information is available at http://www.nature.com/
+reprints
+Publisher’s note Springer Nature remains neutral with regard to jurisdictional claims
+in published maps and institutional af ﬁliations.
+Springer Nature or its licensor (e.g. a society or other partner) holds exclusive rights to
+this article under a publishing agreement with the author(s) or other rightsholder(s);
+author self-archiving of the accepted manuscript version of this article is solely
+governed by the terms of such publishing agreement and applicable law.
+H. Luo et al.
+2890
+Molecular Psychiatry (2025) 30:2880 – 2890
