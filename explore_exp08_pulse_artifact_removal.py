@@ -38,85 +38,103 @@ ALL_INTENSITIES = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 #   4) QC visualization (heatmaps per intensity + before/after Oz overlay at 100%)
 # ════════════════════════════════════════════════════════════════════════════
 
+def _fit_drift(signal, times, baseline_start_idx, baseline_end_idx):
+    """
+    Fit a linear trend to the pre-pulse baseline window.
+
+    Returns slope, intercept such that expected(t) = slope * t + intercept.
+    Also returns residual_std: std of signal around the fitted trend (true noise floor,
+    not inflated by drift as a plain std() would be).
+    """
+    pre_times = times[baseline_start_idx:baseline_end_idx]
+    pre_values = signal[baseline_start_idx:baseline_end_idx]
+    slope, intercept = np.polyfit(pre_times, pre_values, 1)
+    residual_std = (pre_values - (slope * pre_times + intercept)).std()
+    return slope, intercept, residual_std
+
+
 def detect_artifact_end(signal, times, baseline_start_ms, baseline_end_ms,
                         k_threshold, peak_fraction, min_artifact_ms,
                         debounce_samples, max_artifact_ms, sfreq):
     """
-    Detect artifact recovery point via amplitude threshold + peak-relative floor.
+    Detect artifact recovery point using a drift-aware amplitude threshold.
 
-    For this (epoch, channel):
-    1. Compute baseline mean and std over pre-pulse window
-    2. Find peak amplitude in first 5 ms post-pulse
-    3. Threshold = max(k*baseline_std, peak_fraction * peak_amplitude)
-       — scales with artifact size so large artifacts need proportionally larger recovery
-    4. Walk forward from pulse onset until |signal - baseline_mean| < threshold AND
-       signal is decreasing towards baseline (rate of change < small threshold)
-       for debounce_samples consecutive samples
-    5. Enforce minimum artifact window (signal is 15 ms wide; can't recover before that)
-    6. Return the sample index of artifact end
+    The pre-pulse baseline is modelled as a linear trend (slope + intercept) rather
+    than a fixed mean. At 100% intensity the signal drifts at up to -3000 uV/s because
+    the previous pulse's artifact hasn't settled. Comparing the post-pulse signal against
+    a frozen baseline_mean causes false detections; comparing against the extrapolated
+    trend correctly asks "has the spike returned to where the signal would have been
+    without the pulse?"
 
-    Returns: artifact_end_sample (int, relative to pulse onset t=0)
+    For each (epoch, channel):
+    1. Fit linear trend to pre-pulse window → slope, intercept, residual_std
+    2. expected(t) = slope * t + intercept
+    3. Peak amplitude = max deviation from expected in first 5 ms post-pulse
+    4. Threshold = max(k * residual_std, peak_fraction * peak_amplitude)
+    5. Walk forward from MIN_ARTIFACT_MS; at each sample compare |signal - expected(t)|
+       for debounce_samples consecutive samples below threshold
+    6. Return artifact_end_sample relative to t=0
+
+    Returns: artifact_end_sample (int, samples relative to pulse onset)
     """
-    # Convert ms to sample indices
     t_zero_idx = np.argmin(np.abs(times))
     baseline_start_idx = np.argmin(np.abs(times - baseline_start_ms / 1000))
     baseline_end_idx = np.argmin(np.abs(times - baseline_end_ms / 1000))
     max_artifact_samples = int(max_artifact_ms / 1000 * sfreq)
     min_artifact_samples = int(min_artifact_ms / 1000 * sfreq)
-    peak_window_samples = int(0.005 * sfreq)  # 5 ms peak detection window
+    peak_window_samples = int(0.005 * sfreq)  # 5 ms peak window
 
-    # Compute baseline stats from pre-pulse window
-    baseline_values = signal[baseline_start_idx:baseline_end_idx]
-    baseline_mean = baseline_values.mean()
-    baseline_std = baseline_values.std()
+    # Fit drift model to pre-pulse window
+    slope, intercept, residual_std = _fit_drift(signal, times, baseline_start_idx, baseline_end_idx)
 
-    # Peak amplitude in first 5 ms post-pulse
+    # Peak deviation from extrapolated trend in first 5 ms post-pulse
     peak_end = min(t_zero_idx + peak_window_samples, len(signal))
-    peak_amp = np.max(np.abs(signal[t_zero_idx:peak_end] - baseline_mean))
+    peak_amp = np.max(np.abs(signal[t_zero_idx:peak_end] - (slope * times[t_zero_idx:peak_end] + intercept)))
 
-    # Threshold: larger of k*std (baseline noise floor) and peak_fraction*peak (artifact-relative floor)
-    # → ensures large artifacts require proportional recovery, not just crossing a small noise threshold
-    threshold = max(k_threshold * baseline_std, peak_fraction * peak_amp)
+    # Threshold: noise floor OR artifact-relative floor — whichever is larger
+    threshold = max(k_threshold * residual_std, peak_fraction * peak_amp)
 
-    # Walk forward from pulse onset, looking for sustained recovery
+    # Walk forward from minimum artifact window, testing deviation from extrapolated trend
     artifact_end_sample = None
     sub_threshold_count = 0
 
-    walk_start = t_zero_idx + min_artifact_samples  # enforce minimum artifact window
+    walk_start = t_zero_idx + min_artifact_samples
     for sample_idx in range(walk_start, min(t_zero_idx + max_artifact_samples, len(signal))):
-        current_dev = np.abs(signal[sample_idx] - baseline_mean)
-        prev_dev = np.abs(signal[sample_idx - 1] - baseline_mean)
+        expected_now  = slope * times[sample_idx]     + intercept
+        expected_prev = slope * times[sample_idx - 1] + intercept
+        current_dev = np.abs(signal[sample_idx]     - expected_now)
+        prev_dev    = np.abs(signal[sample_idx - 1] - expected_prev)
 
-        # Two conditions: (1) close to baseline, (2) stable or decreasing
-        is_close = current_dev < threshold
-        is_stable_or_decreasing = current_dev <= prev_dev * 1.1  # Allow 10% wiggle for noise
+        is_close             = current_dev < threshold
+        is_stable_or_decreasing = current_dev <= prev_dev * 1.1  # 10% wiggle for noise
 
         if is_close and is_stable_or_decreasing:
             sub_threshold_count += 1
             if sub_threshold_count >= debounce_samples:
-                # Confirmed recovery: return the first sample of the debounce window
                 artifact_end_sample = sample_idx - debounce_samples + 1
                 break
         else:
             sub_threshold_count = 0
 
-    # If no recovery detected, cap at max_artifact_samples
     if artifact_end_sample is None:
         artifact_end_sample = min(t_zero_idx + max_artifact_samples, len(signal) - 1)
 
-    # Return sample index relative to pulse onset (t_zero_idx)
     return artifact_end_sample - t_zero_idx
 
 
 def remove_pulse_artifact(epochs, config):
     """
-    Remove pulse artifact from epochs via per-epoch per-channel threshold detection + interpolation.
+    Remove pulse artifact from epochs via drift-aware detection + interpolation.
 
     For each (epoch, channel):
-    1. Detect artifact_end_sample using amplitude threshold (peak-relative floor)
-    2. Extract pre-baseline (−100 to −5 ms) and post-baseline (10 ms after artifact_end)
-    3. Linearly interpolate from pre to post across artifact region
-    4. Replace [pulse_onset : artifact_end] with interpolation
+    1. Fit linear drift to pre-pulse window (slope + intercept)
+    2. Detect artifact_end via drift-relative threshold
+    3. Interpolate from expected(t=0) to expected(t=artifact_end)
+       — fills artifact window with the drift continuation, not a flat ramp
+    4. Replace [pulse_onset : artifact_end] with this interpolation
+
+    The slow post-pulse exponential decay (expected physics) is preserved — only
+    the acute spike region is replaced.
 
     Returns: cleaned epochs, artifact_end_samples array
     """
@@ -125,20 +143,20 @@ def remove_pulse_artifact(epochs, config):
     times = epochs_clean.times
     sfreq = epochs_clean.info['sfreq']
 
-    # Time indices for baseline windows
     pre_base_start_idx = np.argmin(np.abs(times - config['PRE_BASELINE_START_MS'] / 1000))
-    pre_base_end_idx = np.argmin(np.abs(times - config['PRE_BASELINE_END_MS'] / 1000))
+    pre_base_end_idx   = np.argmin(np.abs(times - config['PRE_BASELINE_END_MS'] / 1000))
     t_zero_idx = np.argmin(np.abs(times))
 
-    # Storage for artifact_end_samples (for QC visualization)
     artifact_end_samples = np.zeros((data.shape[0], data.shape[1]), dtype=int)
 
-    # Loop: epoch x channel
     for ep_idx in range(data.shape[0]):
         for ch_idx in range(data.shape[1]):
             signal = data[ep_idx, ch_idx, :]
 
-            # Step 1: Detect artifact end for this epoch/channel
+            # Step 1: Fit drift model to pre-pulse window
+            slope, intercept, _ = _fit_drift(signal, times, pre_base_start_idx, pre_base_end_idx)
+
+            # Step 2: Detect artifact end (drift-relative)
             artifact_end_sample = detect_artifact_end(
                 signal, times,
                 config['PRE_BASELINE_START_MS'],
@@ -152,23 +170,21 @@ def remove_pulse_artifact(epochs, config):
             )
             artifact_end_samples[ep_idx, ch_idx] = artifact_end_sample
 
-            # Step 2: Compute pre- and post-anchors
-            pre_baseline_mean = signal[pre_base_start_idx:pre_base_end_idx].mean()
-            post_anchor_start_idx = t_zero_idx + artifact_end_sample
-            post_anchor_end_idx = min(post_anchor_start_idx + config['POST_ANCHOR_SAMPLES'], len(signal))
-            post_baseline_mean = signal[post_anchor_start_idx:post_anchor_end_idx].mean()
+            # Step 3: Anchors from extrapolated trend — not the raw signal
+            # pre_anchor:  expected value at pulse onset (t=0)
+            # post_anchor: expected value at artifact_end (where drift would have taken the signal)
+            t_zero   = times[t_zero_idx]
+            t_end    = times[t_zero_idx + artifact_end_sample]
+            pre_anchor  = slope * t_zero + intercept
+            post_anchor = slope * t_end  + intercept
 
-            # Step 3: Create linear interpolation
+            # Step 4: Replace artifact region with drift-continuation ramp
             artifact_region_samples = artifact_end_sample
             if artifact_region_samples > 0:
-                interp = np.linspace(pre_baseline_mean, post_baseline_mean, artifact_region_samples)
-
-                # Step 4: Replace artifact region
+                interp = np.linspace(pre_anchor, post_anchor, artifact_region_samples)
                 data[ep_idx, ch_idx, t_zero_idx:t_zero_idx + artifact_region_samples] = interp
 
-    # Update epochs with cleaned data
     epochs_clean._data = data
-
     return epochs_clean, artifact_end_samples
 
 
@@ -279,7 +295,7 @@ if match_100:
 
 fig.suptitle(
     'Pulse Artifact Removal QC: All Intensities (10-100%)\n'
-    'Peak-relative threshold | 20-sample debounce | 10 ms minimum',
+    'Drift-aware threshold | peak-relative floor | 5-sample debounce | 10 ms minimum',
     fontsize=13, fontweight='bold', y=0.995
 )
 
