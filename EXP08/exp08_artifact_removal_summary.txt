@@ -1,0 +1,131 @@
+EXP08 ARTIFACT REMOVAL ANALYSIS SUMMARY
+================================================================================
+Generated: 2026-04-28
+Source: explore_exp08_pulse_artifact_removal.py (validated run)
+Files: exp08t_epochs_{10,50,100}pct_on_artremoved-epo.fif
+
+================================================================================
+RUN RESULTS (from last execution)
+================================================================================
+
+Artifact end sample statistics (relative to pulse onset, 1000 Hz = 1 sample/ms):
+
+  10%: mean=150.3 ms, std=59.2,  range=[8, 200] samples
+  50%: mean=133.3 ms, std=72.6,  range=[1, 200] samples
+ 100%: mean= 71.7 ms, std=79.9,  range=[1, 200] samples
+
+CONFIG used:
+  Pre-baseline window:  -100 to -5 ms
+  Threshold:            k=5 x baseline_std
+  Debounce:             5 samples (5 ms)
+  Max artifact:         200 ms
+  Post anchor samples:  10 samples (10 ms)
+
+================================================================================
+WHY 100% STILL SHOWS PULSES — ROOT CAUSE ANALYSIS
+================================================================================
+
+PROBLEM: Mean artifact duration at 100% (71.7 ms) is SHORTER than 10% (150.3 ms).
+This is counterintuitive: 100% produces ~10,000 uV spikes vs ~500 uV at 10%.
+Expected behavior: higher intensity = longer artifact = longer detection window.
+Observed behavior: the opposite — detector fires EARLIER at 100%.
+
+ROOT CAUSE: Early triggering during the steep descent phase.
+
+At 100% intensity, the pulse spike is ~10,000 uV. It decays very steeply in the
+first few ms. The threshold is k * baseline_std:
+
+  Case A (low intensity 10%): baseline is stable ~0-50 uV DC.
+    baseline_std ~ 30 uV → threshold = 5 * 30 = 150 uV
+    Artifact ~500 uV takes ~100-150 ms to return below 150 uV.
+    Detector fires correctly late.
+
+  Case B (high intensity 100%): baseline alternates ±315 uV per epoch.
+    Within one stable epoch, baseline_std might be small (10-50 uV).
+    → threshold = 5 * 20 = 100 uV
+    Artifact is ~10,000 uV but descends so steeply that it crosses
+    100 uV threshold during the INITIAL RAPID DESCENT at t ~ 5-20 ms.
+    The stability criterion (current_dev <= prev_dev * 1.1) is SATISFIED
+    during descent because the signal IS monotonically decreasing.
+    Debounce fires at ~5-25 ms. Detector declares "recovered" too early.
+
+  Result: Interpolation from pre-baseline to a post-anchor that is STILL in
+  the artifact tail. The "removed" region covers only the spike peak, not the
+  full settling tail. The remaining artifact tail is left in the signal.
+
+SECONDARY FACTOR: Bimodal baseline (±315 uV across epochs).
+  If pre-pulse epoch is at +315 uV and post-artifact settles to -315 uV,
+  the post-anchor (10 samples after "detected" end) captures a value that is
+  still in transition. The interpolation connects +315 to a negative value
+  during mid-artifact, producing a downward ramp that masks the actual artifact
+  while leaving post-ramp residual.
+
+NOT OLD DATA: The artremoved files were freshly generated and are the correct
+source files. The problem is the detection algorithm.
+
+================================================================================
+PLAN TO FIX
+================================================================================
+
+GOAL: Ensure detector does not fire during initial rapid descent of large artifacts.
+
+FIX 1 — Peak-relative threshold (primary fix):
+  After pulse onset, find peak amplitude in first 5 ms.
+  Set threshold = max(k * baseline_std, PEAK_FRACTION * peak_amplitude)
+  where PEAK_FRACTION = 0.02 (2% of peak).
+  At 100%: peak ~10,000 uV → threshold = max(100, 200) = 200 uV
+  Signal must decay to within 200 uV of baseline before detection.
+  At 10%:  peak ~500 uV   → threshold = max(150, 10) = 150 uV (same as before)
+  This scales threshold with artifact size, not just baseline noise.
+
+FIX 2 — Increase debounce for safety:
+  Change DEBOUNCE_SAMPLES from 5 to 20 (20 ms at 1000 Hz).
+  Forces detector to see 20 consecutive sub-threshold samples before firing.
+  At 100%, the initial descent crosses threshold briefly then continues;
+  20 ms debounce forces it to wait for sustained recovery, not just the crossing.
+
+FIX 3 — Enforce minimum artifact window by intensity estimate:
+  Add a hard minimum: never fire before MIN_ARTIFACT_MS = 10 ms.
+  This prevents the 1-sample detections (range [1, 200]).
+  A 1 ms detection is physically impossible; the pulse itself is ~15 ms wide.
+
+IMPLEMENTATION CHANGES:
+  detect_artifact_end():
+    1. Add peak detection: peak_amp = np.max(np.abs(signal[t_zero_idx:t_zero_idx+5] - baseline_mean))
+    2. threshold = max(k_threshold * baseline_std, peak_fraction * peak_amp)
+    3. Enforce minimum: if artifact_end_sample < min_artifact_samples, skip to min
+  Config:
+    DEBOUNCE_SAMPLES: 5 → 20
+    PEAK_FRACTION: 0.02 (new parameter)
+    MIN_ARTIFACT_MS: 10 (new parameter)
+
+EXPECTED RESULTS AFTER FIX:
+   10%: detection unchanged (~150 ms, threshold dominated by k*std)
+   50%: detection should lengthen (~150+ ms, peak-relative threshold kicks in)
+  100%: detection should lengthen to 100-180 ms (peak-relative + debounce)
+  Pattern should become: 10% >= 50% >= 100% OR 100% > 50% > 10%
+  (either is plausible depending on actual artifact physiology)
+
+================================================================================
+QC VERIFICATION AFTER FIX
+================================================================================
+
+1. Re-run script, check artifact_end_samples heatmap:
+   - 100% should show longer durations than currently (72 ms mean)
+   - range [1, N] should disappear; min should be >= 10 ms
+2. Plot mean artremoved epoch at Oz for each intensity:
+   - Post-artifact region should be flat relative to pre-baseline
+   - No visible residual spike or slow decay after interpolation ends
+3. Pre-pulse RMS should be <10 uV on artremoved epochs (vs 151 uV filtfilt raw)
+4. Run TEP extraction on updated artremoved files; POST window amplitude
+   should be <100 uV at 50-100% (currently 1.4K-17K uV).
+
+================================================================================
+FILES TO UPDATE
+================================================================================
+
+  explore_exp08_pulse_artifact_removal.py — detection logic changes
+  wiki/methods/TEP_Preprocessing.md       — update config table + limitations
+  wiki/experiments/EXP08.md              — update artifact removal results
+
+================================================================================
