@@ -77,15 +77,10 @@ if "stim" not in raw_stim_full.ch_names:
 stim_trace = raw_stim_full.copy().pick(["stim"]).get_data()[0]
 # → (n_samples,) stim voltage in volts
 
-# ══ 1.4 Keep the EEG set explicit ══
+# ══ 1.4 Separate EEG from non-EEG channels ══
+NON_EEG = {"stim", "ground_truth"} | EXCLUDED_CHANNELS
 raw_eeg = raw_stim_full.copy().drop_channels(
-    [
-        channel_name
-        for channel_name in raw_stim_full.ch_names
-        if channel_name.lower() in {"stim", "ground_truth"}
-        or channel_name.startswith("STI")
-        or channel_name in EXCLUDED_CHANNELS
-    ]
+    [ch for ch in raw_stim_full.ch_names if ch in NON_EEG or ch.startswith("STI")]
 )
 if len(raw_eeg.ch_names) == 0:
     raise RuntimeError("No retained EEG channels remain after removing stim, GT, and excluded channels.")
@@ -119,7 +114,73 @@ block_offsets_samples = block_onsets_samples + inter_pulse_samples
 
 print(f"Detected: {len(block_onsets_samples)} pulses")
 
-# ══ 2.2 Group blocks into intensity levels ══
+# ════════════════════════════════════════════════════════════════════════════
+# 3) PULSE ALIGNMENT QC
+# ════════════════════════════════════════════════════════════════════════════
+
+# ══ 3.1 Extract short stim window around each detected onset ══
+# −5 ms to +30 ms captures the full ~15 ms TMS discharge and pre-pulse baseline.
+# Seconds → samples for array slicing.
+from scipy.signal import correlate
+pre_samples = int(round(0.005 * sfreq))   # 5 ms pre-onset
+post_samples = int(round(0.030 * sfreq))  # 30 ms post-onset
+window_size = pre_samples + post_samples  # 35 samples at 1 kHz
+
+pulse_matrix = np.stack([
+    stim_trace[onset - pre_samples : onset + post_samples]
+    for onset in block_onsets_samples
+    if onset >= pre_samples and onset + post_samples <= len(stim_trace)
+])
+# → (n_pulses, window_size) stim voltage in volts; rows are individual pulses
+
+# ══ 3.2 Cross-correlate each pulse against the mean template ══
+# Measures per-pulse onset jitter in samples.
+# scipy.signal.correlate with mode="full" returns full correlation;
+# peak position encodes lag relative to template.
+template = pulse_matrix.mean(axis=0)  # (window_size,) mean pulse shape
+lags_samples = np.array([
+    np.argmax(correlate(pulse, template, mode="full")) - (window_size - 1)
+    for pulse in pulse_matrix
+])
+# → (n_pulses,) int lag in samples; 0 = perfectly aligned
+
+print(f"Pulse alignment jitter: min={lags_samples.min()}, max={lags_samples.max()}, "
+      f"std={lags_samples.std():.2f} samples")
+
+# ══ 3.3 QC plot: pulse overlay + jitter histogram ══
+time_ms = np.linspace(-pre_samples, post_samples - 1, window_size) / sfreq * 1000
+# → (window_size,) time axis in milliseconds
+
+fig, (ax_overlay, ax_hist) = plt.subplots(1, 2, figsize=(12, 4))
+
+# Panel A: all pulse waveforms overlaid
+ax_overlay.plot(time_ms, pulse_matrix.T * 1e6, color="gray", alpha=0.2, linewidth=0.5)
+ax_overlay.plot(time_ms, template * 1e6, color="black", linewidth=1.5, label="mean")
+ax_overlay.axvline(0, color="red", linestyle="--", linewidth=0.8, alpha=0.7)
+ax_overlay.set_xlabel("Time relative to detected onset (ms)")
+ax_overlay.set_ylabel("STIM voltage (µV)")
+ax_overlay.set_title("All pulse waveforms (gray) vs. mean (black)")
+ax_overlay.legend()
+ax_overlay.grid(True, alpha=0.3)
+
+# Panel B: lag distribution
+lag_bins = np.arange(lags_samples.min() - 1, lags_samples.max() + 2)
+ax_hist.hist(lags_samples, bins=lag_bins, edgecolor="black")
+ax_hist.set_xlabel("Cross-correlation lag (samples = ms at 1 kHz)")
+ax_hist.set_ylabel("Count")
+ax_hist.set_title("Onset jitter distribution")
+ax_hist.grid(True, alpha=0.3, axis="y")
+
+fig.tight_layout()
+fig.savefig(OUTPUT_DIRECTORY / "exp08_pulse_alignment_qc.png", dpi=150)
+plt.close()
+print("Saved: exp08_pulse_alignment_qc.png")
+
+# ════════════════════════════════════════════════════════════════════════════
+# 4) EPOCH BUILD (conditional on alignment QC pass)
+# ════════════════════════════════════════════════════════════════════════════
+
+# ══ 4.2 Group blocks into intensity levels ══
 # Blocks are sequential: 0–19 → 10%, 20–39 → 20%, ..., 180–199 → 100%
 intensity_blocks = {}  # dict: intensity_pct → list of (onset, offset) tuples
 for intensity_idx, intensity_level in enumerate(INTENSITY_LEVELS):
@@ -131,17 +192,17 @@ for intensity_idx, intensity_level in enumerate(INTENSITY_LEVELS):
     print(f"  {intensity_level*100:.0f}%: {len(onsets)} pulses")
 
 # ============================================================
-# 3) BUILD EPOCHS PER INTENSITY
+# 5) BUILD EPOCHS PER INTENSITY
 # ============================================================
 
-# ══ 3.1 Compute ON window geometry ══
+# ══ 5.1 Compute ON window geometry ══
 window_len = ON_WINDOW_S[1] - ON_WINDOW_S[0]  # 0.6 s
 window_size = int(round(window_len * sfreq))   # 600 samples
 # Note: MNE.Epochs handles tmin/tmax directly, no start_shift needed
 
 print(f"\nON window: {ON_WINDOW_S[0]:.2f}–{ON_WINDOW_S[1]:.1f} s (pre-post, {window_size} samples)")
 
-# ══ 3.2 Process each intensity level ══
+# ══ 5.2 Process each intensity level ══
 summary_rows = []
 timing_figure_windows = []
 
@@ -151,7 +212,7 @@ for intensity_level in INTENSITY_LEVELS:
     dose_onsets = np.array(dose_onsets)
     dose_offsets = np.array(dose_offsets)
 
-    # 3.2.1 Build accepted ON windows (same pulse onsets used for both ON and late-OFF)
+    # 5.2.1 Build accepted ON windows (same pulse onsets used for both ON and late-OFF)
     # Reject only if pulse is too close to boundaries
     on_pre_samples = int(round(-ON_WINDOW_S[0] * sfreq))  # 100 samples pre
     on_post_samples = int(round(ON_WINDOW_S[1] * sfreq))  # 500 samples post
@@ -167,21 +228,21 @@ for intensity_level in INTENSITY_LEVELS:
     if valid_count == 0:
         raise RuntimeError(f"No valid windows (ON + late-OFF) for {intensity_pct}%.")
 
-    # 3.2.2 Create ON epochs (EEG)
+    # 5.2.2 Create ON epochs (EEG)
     event_dict_on = {f"intensity_{intensity_pct}pct": 1}
     epochs_on = mne.Epochs(
         raw_eeg, events, event_dict_on, tmin=ON_WINDOW_S[0], tmax=ON_WINDOW_S[1],
         baseline=None, preload=True, verbose=False
     )
 
-    # 3.2.3 Create late-OFF epochs (EEG)
+    # 5.2.3 Create late-OFF epochs (EEG)
     event_dict_off = {f"intensity_{intensity_pct}pct": 1}
     epochs_late_off = mne.Epochs(
         raw_eeg, events, event_dict_off, tmin=LATE_OFF_WINDOW_S[0], tmax=LATE_OFF_WINDOW_S[1],
         baseline=None, preload=True, verbose=False
     )
 
-    # 3.2.4 Create ON and late-OFF GT epochs
+    # 5.2.4 Create ON and late-OFF GT epochs
     gt_raw = raw_stim_full.copy().pick(["ground_truth"])
     epochs_gt_on = mne.Epochs(
         gt_raw, events, event_dict_on, tmin=ON_WINDOW_S[0], tmax=ON_WINDOW_S[1],
@@ -192,7 +253,7 @@ for intensity_level in INTENSITY_LEVELS:
         baseline=None, preload=True, verbose=False
     )
 
-    # 3.2.5 Create ON and late-OFF stimulus epochs
+    # 5.2.5 Create ON and late-OFF stimulus epochs
     stim_raw = raw_stim_full.copy().pick(["stim"])
     epochs_stim_on = mne.Epochs(
         stim_raw, events, event_dict_on, tmin=ON_WINDOW_S[0], tmax=ON_WINDOW_S[1],
@@ -203,7 +264,7 @@ for intensity_level in INTENSITY_LEVELS:
         baseline=None, preload=True, verbose=False
     )
 
-    # 3.2.7 Save all epoch files
+    # 5.2.6 Save all epoch files
     output_on = f"exp08_epochs_{intensity_pct}pct_on-epo.fif"
     output_off = f"exp08_epochs_{intensity_pct}pct_lateoff-epo.fif"
     output_gt_on = f"exp08_gt_epochs_{intensity_pct}pct_on-epo.fif"
@@ -246,10 +307,10 @@ for intensity_level in INTENSITY_LEVELS:
         ))
 
 # ============================================================
-# 4) VISUALIZE BLOCK TIMING
+# 6) VISUALIZE BLOCK TIMING
 # ============================================================
 
-# ══ 4.1 Plot stim trace with all ON windows marked by intensity ══
+# ══ 6.1 Plot stim trace with all ON windows marked by intensity ══
 fig, ax = plt.subplots(figsize=(16, 6))
 time_s = np.arange(len(stim_trace)) / sfreq
 
@@ -282,10 +343,10 @@ plt.close()
 print(f"\nSaved: exp08_block_timing_by_intensity.png")
 
 # ============================================================
-# 5) SAVE SUMMARY & REPORT
+# 7) SAVE SUMMARY & REPORT
 # ============================================================
 
-# ══ 5.1 Write timing summary to file ══
+# ══ 7.1 Write timing summary to file ══
 summary_path = OUTPUT_DIRECTORY / "exp08_epoch_summary.txt"
 with open(summary_path, "w") as f:
     f.write("=" * 80 + "\n")
@@ -344,7 +405,7 @@ with open(summary_path, "w") as f:
 
 print(f"Saved: {summary_path}")
 
-# ══ 5.2 Print summary to console ══
+# ══ 7.2 Print summary to console ══
 print("\n" + "=" * 80)
 print("EXP08 EPOCH EXTRACTION COMPLETE")
 print("=" * 80)
