@@ -43,7 +43,7 @@ Intensity    Valid Epochs    Output Files
 TOTAL        200            
 --------------------------------------------------------------------------------
 
-Excluded channels: TP10, TP9, Fp1
+Excluded channels: TP9, TP10, Fp1
 Pulse detection threshold: 8% of max stim amplitude
 
 Output files generated per intensity:

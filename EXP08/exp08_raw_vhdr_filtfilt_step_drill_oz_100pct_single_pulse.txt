@@ -18,6 +18,8 @@ Filter: Butterworth band-pass 11.0-14.0 Hz, order 4
 Padding length: 27 samples = 0.027 s each side
 Manual-vs-Scipy max absolute difference: 0.000000 uV
 
+DATAVIZ figure: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_raw_vhdr_filtfilt_dataviz_oz_100pct_single_pulse.png
+
 First SOS section coefficients:
 b0=7.69909891471e-09, b1=1.53981978294e-08, b2=7.69909891471e-09, a1=-1.97533255236, a2=0.981941422056
 

@@ -1,331 +1,202 @@
-"""Remove TMS pulse artifact from EXP08 EEG epochs via per-epoch per-channel threshold detection + interpolation."""
+"""Remove EXP08 run01 single-pulse artifacts from raw EEG before epoching."""
 
 from pathlib import Path
-import matplotlib.pyplot as plt
+import warnings
+
 import mne
-import numpy as np
 
-OUTPUT_DIR = Path(r"C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08")
+import plot_helpers
+import preprocessing
 
-# ════════════════════════════════════════════════════════════════════════════
+
+# ============================================================
 # CONFIG
-# ════════════════════════════════════════════════════════════════════════════
+# ============================================================
 
-PRE_BASELINE_START_MS = -100   # pre-pulse baseline window start
-PRE_BASELINE_END_MS = -5       # close to pulse — captures current baseline state
-K_THRESHOLD = 5                # artifact threshold: k × pre-pulse std
-PEAK_FRACTION = 0.02           # threshold floor: 2% of peak artifact amplitude
-MIN_ARTIFACT_MS = 10           # never declare recovery before 10 ms (pulse is ~15 ms wide)
-DEBOUNCE_SAMPLES = 5           # consecutive sub-threshold samples to confirm recovery (5 ms)
-MAX_ARTIFACT_MS = 200          # hard cap: never crop more than 200 ms per trial
-POST_ANCHOR_SAMPLES = 10       # samples after artifact_end for post-baseline mean
+data_directory = Path(r"C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp")
+stim_vhdr_path = data_directory / "exp08-STIM-pulse_run01_10-100.vhdr"  # run01 single pulses, not triplet run02
+output_directory = Path(r"C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08")
+output_directory.mkdir(parents=True, exist_ok=True)
 
-ALL_INTENSITIES = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+intensity_levels = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # percent MSO blocks
+pulses_per_intensity = 20
+inter_pulse_interval_s = 5.0
+first_pulse_sample = 20530  # user-confirmed run01 first pulse peak
 
-# ════════════════════════════════════════════════════════════════════════════
-# GOAL: Remove pulse artifact from EXP08 EEG epochs, per-epoch per-channel,
-#       using amplitude-threshold detection and linear interpolation.
-#
-# INPUT:  exp08t_epochs_{pct}pct_on-epo.fif  (10 intensity files, 10-100%)
-# OUTPUT: exp08t_epochs_{pct}pct_on_artremoved-epo.fif
-#
-# PIPELINE:
-#   1) LOAD EPOCHS for each intensity
-#   2) FOR EACH EPOCH, CHANNEL:
-#      └─ Detect artifact end via amplitude threshold + debounce
-#      └─ Interpolate artifact region using epoch-specific baselines
-#   3) SAVE cleaned epochs
-#   4) QC visualization (heatmaps per intensity + before/after Oz overlay at 100%)
-# ════════════════════════════════════════════════════════════════════════════
+on_window_s = (-1.0, 2.0)  # match explore_exp08_pulses.py single-pulse epochs
+excluded_channels = {"TP9", "Fp1", "TP10"}  # same retained EEG set as EXP08 extraction
 
-def _fit_drift(signal, times, baseline_start_idx, baseline_end_idx):
-    """
-    Fit a linear trend to the pre-pulse baseline window.
-
-    Returns slope, intercept such that expected(t) = slope * t + intercept.
-    Also returns residual_std: std of signal around the fitted trend (true noise floor,
-    not inflated by drift as a plain std() would be).
-    """
-    pre_times = times[baseline_start_idx:baseline_end_idx]
-    pre_values = signal[baseline_start_idx:baseline_end_idx]
-    slope, intercept = np.polyfit(pre_times, pre_values, 1)
-    residual_std = (pre_values - (slope * pre_times + intercept)).std()
-    return slope, intercept, residual_std
+baseline_window_ms = (-100, -10)  # local pre-pulse drift/noise estimate
+artifact_start_ms = -10           # run01 EEG impulse peaks 3 ms before the scheduled pulse sample
+min_artifact_end_ms = 20          # acute pulse is about 15 ms wide
+max_artifact_end_ms = 200         # cap deletion before the physiological window dominates
+peak_window_ms = (0, 20)          # peak-relative floor for thresholding
+threshold_sd_multiplier = 5.0
+peak_fraction = 0.02
+debounce_ms = 20
 
 
-def detect_artifact_end(signal, times, baseline_start_ms, baseline_end_ms,
-                        k_threshold, peak_fraction, min_artifact_ms,
-                        debounce_samples, max_artifact_ms, sfreq):
-    """
-    Detect artifact recovery point using a drift-aware amplitude threshold.
-
-    The pre-pulse baseline is modelled as a linear trend (slope + intercept) rather
-    than a fixed mean. At 100% intensity the signal drifts at up to -3000 uV/s because
-    the previous pulse's artifact hasn't settled. Comparing the post-pulse signal against
-    a frozen baseline_mean causes false detections; comparing against the extrapolated
-    trend correctly asks "has the spike returned to where the signal would have been
-    without the pulse?"
-
-    For each (epoch, channel):
-    1. Fit linear trend to pre-pulse window → slope, intercept, residual_std
-    2. expected(t) = slope * t + intercept
-    3. Peak amplitude = max deviation from expected in first 5 ms post-pulse
-    4. Threshold = max(k * residual_std, peak_fraction * peak_amplitude)
-    5. Walk forward from MIN_ARTIFACT_MS; at each sample compare |signal - expected(t)|
-       for debounce_samples consecutive samples below threshold
-    6. Return artifact_end_sample relative to t=0
-
-    Returns: artifact_end_sample (int, samples relative to pulse onset)
-    """
-    t_zero_idx = np.argmin(np.abs(times))
-    baseline_start_idx = np.argmin(np.abs(times - baseline_start_ms / 1000))
-    baseline_end_idx = np.argmin(np.abs(times - baseline_end_ms / 1000))
-    max_artifact_samples = int(max_artifact_ms / 1000 * sfreq)
-    min_artifact_samples = int(min_artifact_ms / 1000 * sfreq)
-    peak_window_samples = int(0.005 * sfreq)  # 5 ms peak window
-
-    # Fit drift model to pre-pulse window
-    slope, intercept, residual_std = _fit_drift(signal, times, baseline_start_idx, baseline_end_idx)
-
-    # Peak deviation from extrapolated trend in first 5 ms post-pulse
-    peak_end = min(t_zero_idx + peak_window_samples, len(signal))
-    peak_amp = np.max(np.abs(signal[t_zero_idx:peak_end] - (slope * times[t_zero_idx:peak_end] + intercept)))
-
-    # Threshold: noise floor OR artifact-relative floor — whichever is larger
-    threshold = max(k_threshold * residual_std, peak_fraction * peak_amp)
-
-    # Walk forward from minimum artifact window, testing deviation from extrapolated trend
-    artifact_end_sample = None
-    sub_threshold_count = 0
-
-    walk_start = t_zero_idx + min_artifact_samples
-    for sample_idx in range(walk_start, min(t_zero_idx + max_artifact_samples, len(signal))):
-        expected_now  = slope * times[sample_idx]     + intercept
-        expected_prev = slope * times[sample_idx - 1] + intercept
-        current_dev = np.abs(signal[sample_idx]     - expected_now)
-        prev_dev    = np.abs(signal[sample_idx - 1] - expected_prev)
-
-        is_close             = current_dev < threshold
-        is_stable_or_decreasing = current_dev <= prev_dev * 1.1  # 10% wiggle for noise
-
-        if is_close and is_stable_or_decreasing:
-            sub_threshold_count += 1
-            if sub_threshold_count >= debounce_samples:
-                artifact_end_sample = sample_idx - debounce_samples + 1
-                break
-        else:
-            sub_threshold_count = 0
-
-    if artifact_end_sample is None:
-        artifact_end_sample = min(t_zero_idx + max_artifact_samples, len(signal) - 1)
-
-    return artifact_end_sample - t_zero_idx
+def make_eeg_epochs(raw_eeg, event_samples, intensity_pct):
+    """Create run01 ON epochs for one intensity from EEG-only raw data."""
+    return mne.Epochs(
+        raw_eeg,
+        preprocessing.build_event_array(event_samples),
+        {f"intensity_{intensity_pct}pct": 1},
+        tmin=on_window_s[0],
+        tmax=on_window_s[1],
+        baseline=None,
+        preload=True,
+        verbose=False,
+    )
 
 
-def remove_pulse_artifact(epochs, config):
-    """
-    Remove pulse artifact from epochs via drift-aware detection + interpolation.
+# ============================================================
+# 1) LOAD RUN01 RAW DATA
+# ============================================================
 
-    For each (epoch, channel):
-    1. Fit linear drift to pre-pulse window (slope + intercept)
-    2. Detect artifact_end via drift-relative threshold
-    3. Interpolate from expected(t=0) to expected(t=artifact_end)
-       — fills artifact window with the drift continuation, not a flat ramp
-    4. Replace [pulse_onset : artifact_end] with this interpolation
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", message="No coordinate information found*")
+    warnings.filterwarnings("ignore", message="Online software filter detected*")
+    warnings.filterwarnings("ignore", message="Not setting positions of 2 misc*")
+    raw_full = mne.io.read_raw_brainvision(str(stim_vhdr_path), preload=True, verbose=False)
 
-    The slow post-pulse exponential decay (expected physics) is preserved — only
-    the acute spike region is replaced.
+sampling_rate_hz = float(raw_full.info["sfreq"])
+if "stim" not in raw_full.ch_names or "ground_truth" not in raw_full.ch_names:
+    raise RuntimeError("Run01 must contain both stim and ground_truth channels.")
 
-    Returns: cleaned epochs, artifact_end_samples array
-    """
-    epochs_clean = epochs.copy()
-    data = epochs_clean.get_data()  # (n_epochs, n_channels, n_times)
-    times = epochs_clean.times
-    sfreq = epochs_clean.info['sfreq']
+non_eeg_channels = {"stim", "ground_truth"} | excluded_channels
+raw_eeg = raw_full.copy().drop_channels(
+    [channel for channel in raw_full.ch_names if channel in non_eeg_channels or channel.startswith("STI")]
+)
+if len(raw_eeg.ch_names) == 0:
+    raise RuntimeError("No retained EEG channels remain after exclusions.")
 
-    pre_base_start_idx = np.argmin(np.abs(times - config['PRE_BASELINE_START_MS'] / 1000))
-    pre_base_end_idx   = np.argmin(np.abs(times - config['PRE_BASELINE_END_MS'] / 1000))
-    t_zero_idx = np.argmin(np.abs(times))
-
-    artifact_end_samples = np.zeros((data.shape[0], data.shape[1]), dtype=int)
-
-    for ep_idx in range(data.shape[0]):
-        for ch_idx in range(data.shape[1]):
-            signal = data[ep_idx, ch_idx, :]
-
-            # Step 1: Fit drift model to pre-pulse window
-            slope, intercept, _ = _fit_drift(signal, times, pre_base_start_idx, pre_base_end_idx)
-
-            # Step 2: Detect artifact end (drift-relative)
-            artifact_end_sample = detect_artifact_end(
-                signal, times,
-                config['PRE_BASELINE_START_MS'],
-                config['PRE_BASELINE_END_MS'],
-                config['K_THRESHOLD'],
-                config['PEAK_FRACTION'],
-                config['MIN_ARTIFACT_MS'],
-                config['DEBOUNCE_SAMPLES'],
-                config['MAX_ARTIFACT_MS'],
-                sfreq
-            )
-            artifact_end_samples[ep_idx, ch_idx] = artifact_end_sample
-
-            # Step 3: Anchors from extrapolated trend — not the raw signal
-            # pre_anchor:  expected value at pulse onset (t=0)
-            # post_anchor: expected value at artifact_end (where drift would have taken the signal)
-            t_zero   = times[t_zero_idx]
-            t_end    = times[t_zero_idx + artifact_end_sample]
-            pre_anchor  = slope * t_zero + intercept
-            post_anchor = slope * t_end  + intercept
-
-            # Step 4: Replace artifact region with drift-continuation ramp
-            artifact_region_samples = artifact_end_sample
-            if artifact_region_samples > 0:
-                interp = np.linspace(pre_anchor, post_anchor, artifact_region_samples)
-                data[ep_idx, ch_idx, t_zero_idx:t_zero_idx + artifact_region_samples] = interp
-
-    epochs_clean._data = data
-    return epochs_clean, artifact_end_samples
-
-
-# ════════════════════════════════════════════════════════════════════════════
-# 1) LOAD AND PROCESS ALL INTENSITIES
-# ════════════════════════════════════════════════════════════════════════════
-
-config = {
-    'PRE_BASELINE_START_MS': PRE_BASELINE_START_MS,
-    'PRE_BASELINE_END_MS': PRE_BASELINE_END_MS,
-    'K_THRESHOLD': K_THRESHOLD,
-    'PEAK_FRACTION': PEAK_FRACTION,
-    'MIN_ARTIFACT_MS': MIN_ARTIFACT_MS,
-    'DEBOUNCE_SAMPLES': DEBOUNCE_SAMPLES,
-    'MAX_ARTIFACT_MS': MAX_ARTIFACT_MS,
-    'POST_ANCHOR_SAMPLES': POST_ANCHOR_SAMPLES,
-}
-
-epochs_list = []             # (intensity_label, epochs_orig, epochs_clean)
-artifact_end_samples_list = []  # (intensity_label, artifact_end_samples)
-
-for intensity_pct in ALL_INTENSITIES:
-    intensity_label = f"{intensity_pct}%"
-    print(f"Processing {intensity_label} intensity...")
-
-    pct_label = f"{intensity_pct}pct"
-    epochs_file = OUTPUT_DIR / f"exp08t_epochs_{pct_label}_on-epo.fif"
-
-    # Load original epochs
-    epochs = mne.read_epochs(epochs_file, verbose=False, preload=True)
-    print(f"  Loaded {len(epochs)} epochs, {len(epochs.ch_names)} channels")
-
-    # ════════════════════════════════════════════════════════════════════════
-    # 2) DETECT ARTIFACT END & INTERPOLATE (per epoch, per channel)
-    # ════════════════════════════════════════════════════════════════════════
-
-    epochs_clean, artifact_end_samples = remove_pulse_artifact(epochs, config)
-
-    mean_ms = artifact_end_samples.mean()
-    std_ms = artifact_end_samples.std()
-    min_ms = artifact_end_samples.min()
-    max_ms = artifact_end_samples.max()
-    print(f"  Artifact duration: mean={mean_ms:.1f} ms, std={std_ms:.1f}, range=[{min_ms}, {max_ms}] ms")
-
-    # ════════════════════════════════════════════════════════════════════════
-    # 3) SAVE CLEANED EPOCHS
-    # ════════════════════════════════════════════════════════════════════════
-
-    output_file = OUTPUT_DIR / f"exp08t_epochs_{pct_label}_on_artremoved-epo.fif"
-    epochs_clean.save(output_file, overwrite=True, verbose=False)
-    print(f"  Saved: {output_file.name}")
-
-    epochs_list.append((intensity_label, epochs, epochs_clean))
-    artifact_end_samples_list.append((intensity_label, artifact_end_samples))
-
-# ════════════════════════════════════════════════════════════════════════════
-# 4) QC VISUALIZATION
-# ════════════════════════════════════════════════════════════════════════════
-
-# Panel layout: 10 heatmap rows (one per intensity) + 2 Oz overlay panels for 100%
-fig = plt.figure(figsize=(18, 28))
-gs = fig.add_gridspec(12, 2, hspace=0.4, wspace=0.35)
-
-# Panel A: artifact_end_samples heatmap for each intensity (left column)
-for row, (intensity_label, artifact_end_samples) in enumerate(artifact_end_samples_list):
-    ax = fig.add_subplot(gs[row, 0])
-    im = ax.imshow(artifact_end_samples, aspect='auto', cmap='viridis', origin='lower')
-    ax.set_xlabel('Channel index')
-    ax.set_ylabel('Epoch')
-    ax.set_title(f'{intensity_label} artifact end (ms)')
-    plt.colorbar(im, ax=ax, label='ms')
-
-# Panel B: mean artifact duration across intensities (right column, top)
-ax_trend = fig.add_subplot(gs[0:4, 1])
-means = [arr.mean() for _, arr in artifact_end_samples_list]
-stds = [arr.std() for _, arr in artifact_end_samples_list]
-intensities = ALL_INTENSITIES
-ax_trend.errorbar(intensities, means, yerr=stds, fmt='o-', capsize=4, color='steelblue')
-ax_trend.set_xlabel('Intensity (%)')
-ax_trend.set_ylabel('Artifact duration (ms)')
-ax_trend.set_title('Mean artifact duration vs intensity\n(should increase or plateau, not drop at 100%)')
-ax_trend.grid(True, alpha=0.3)
-ax_trend.set_xticks(intensities)
-
-# Panel C: Before/after Oz overlay for 100% intensity (right column, bottom)
-intensity_100_label = "100%"
-match_100 = [(lab, orig, clean) for lab, orig, clean in epochs_list if lab == intensity_100_label]
-if match_100:
-    intensity_label_100, epochs_orig_100, epochs_clean_100 = match_100[0]
-    ch_idx_oz = epochs_orig_100.ch_names.index('Oz')
-    t = epochs_orig_100.times
-
-    for col_idx, (title_suffix, epochs_to_plot, color) in enumerate([
-        ('BEFORE removal (100%)', epochs_orig_100, 'gray'),
-        ('AFTER removal (100%)', epochs_clean_100, 'steelblue'),
-    ]):
-        ax = fig.add_subplot(gs[4:8, 1] if col_idx == 0 else gs[8:12, 1])
-        data_plot = epochs_to_plot.get_data()[:, ch_idx_oz, :] * 1e6
-        for epoch in data_plot:
-            ax.plot(t, epoch, alpha=0.2, linewidth=0.5, color=color)
-        ax.axvline(0, color='red', linestyle='--', linewidth=1, alpha=0.7, label='Pulse onset')
-        ax.set_xlim(-0.3, 0.5)
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Oz (uV)')
-        ax.set_title(f'Oz {title_suffix}')
-        ax.grid(True, alpha=0.2)
-        ax.legend(fontsize=8)
-
-fig.suptitle(
-    'Pulse Artifact Removal QC: All Intensities (10-100%)\n'
-    'Drift-aware threshold | peak-relative floor | 5-sample debounce | 10 ms minimum',
-    fontsize=13, fontweight='bold', y=0.995
+pulse_count = len(intensity_levels) * pulses_per_intensity
+pulse_samples = preprocessing.build_fixed_interval_event_samples(
+    first_pulse_sample,
+    pulse_count,
+    inter_pulse_interval_s,
+    sampling_rate_hz,
+    raw_full.n_times,
+    pre_margin_s=abs(baseline_window_ms[0]) / 1000.0,
+    post_margin_s=max_artifact_end_ms / 1000.0,
+)
+intensity_pulses = preprocessing.split_event_samples_by_blocks(
+    pulse_samples,
+    intensity_levels,
+    pulses_per_intensity,
 )
 
-fig.savefig(OUTPUT_DIR / "exp08_pulse_artremoved_qc.png", dpi=150, bbox_inches='tight')
-plt.close()
-print("\nSaved: exp08_pulse_artremoved_qc.png")
+print(f"Loaded run01: {raw_full.n_times / sampling_rate_hz:.1f} s, {len(raw_eeg.ch_names)} EEG channels")
+print(f"Pulse schedule: {pulse_samples.size} pulses, first={pulse_samples[0]}, IPI={inter_pulse_interval_s:.1f} s")
 
-# ════════════════════════════════════════════════════════════════════════════
-# SUMMARY
-# ════════════════════════════════════════════════════════════════════════════
 
-print("\n" + "="*70)
-print("PULSE ARTIFACT REMOVAL COMPLETE — ALL INTENSITIES")
-print("="*70)
-print(f"Config:")
-print(f"  Pre-baseline window: {PRE_BASELINE_START_MS} to {PRE_BASELINE_END_MS} ms")
-print(f"  Threshold:           k={K_THRESHOLD} x baseline_std  OR  {PEAK_FRACTION*100:.0f}% of peak amplitude")
-print(f"  Min artifact:        {MIN_ARTIFACT_MS} ms")
-print(f"  Debounce:            {DEBOUNCE_SAMPLES} samples ({DEBOUNCE_SAMPLES} ms at 1000 Hz)")
-print(f"  Max artifact:        {MAX_ARTIFACT_MS} ms")
+# ============================================================
+# 2) CLEAN CONTINUOUS EEG
+# ============================================================
 
-print(f"\nArtifact duration statistics per intensity:")
-print(f"  {'Intensity':>10}  {'Mean (ms)':>10}  {'Std':>7}  {'Min':>5}  {'Max':>5}")
-for intensity_label, artifact_end_samples in artifact_end_samples_list:
-    mean_ms = artifact_end_samples.mean()
-    std_ms = artifact_end_samples.std()
-    min_ms = artifact_end_samples.min()
-    max_ms = artifact_end_samples.max()
-    print(f"  {intensity_label:>10}  {mean_ms:>10.1f}  {std_ms:>7.1f}  {min_ms:>5.0f}  {max_ms:>5.0f}")
+clean_data_v, all_durations_ms, all_thresholds_uv = preprocessing.interpolate_pulse_artifacts_by_threshold(
+    raw_eeg.get_data(),
+    pulse_samples,
+    sampling_rate_hz,
+    baseline_window_ms,
+    artifact_start_ms,
+    min_artifact_end_ms,
+    max_artifact_end_ms,
+    peak_window_ms,
+    threshold_sd_multiplier,
+    peak_fraction,
+    debounce_ms,
+)
+raw_clean = raw_eeg.copy()
+raw_clean._data[:] = clean_data_v
 
-print(f"\nCleaned epoch files saved (all intensities):")
-for intensity_pct in ALL_INTENSITIES:
-    print(f"  exp08t_epochs_{intensity_pct}pct_on_artremoved-epo.fif")
+
+# ============================================================
+# 3) REBUILD RUN01 EPOCHS AND SAVE OUTPUTS
+# ============================================================
+
+artifact_rows = []
+threshold_rows = []
+epochs_100_original = None
+epochs_100_clean = None
+
+for level_index, intensity_pct in enumerate(intensity_levels):
+    event_samples = intensity_pulses[intensity_pct]
+    epochs_original = make_eeg_epochs(raw_eeg, event_samples, intensity_pct)
+    epochs_clean = make_eeg_epochs(raw_clean, event_samples, intensity_pct)
+
+    output_path = output_directory / f"exp08_epochs_{intensity_pct}pct_on_artremoved-epo.fif"
+    epochs_clean.save(output_path, overwrite=True, verbose=False)
+
+    row_slice = slice(level_index * pulses_per_intensity, (level_index + 1) * pulses_per_intensity)
+    durations_ms = all_durations_ms[row_slice]
+    thresholds_uv = all_thresholds_uv[row_slice]
+    artifact_rows.append((intensity_pct, durations_ms))
+    threshold_rows.append((intensity_pct, thresholds_uv))
+    print(
+        f"{intensity_pct:3d}%: saved {output_path.name}; "
+        f"artifact end mean={durations_ms.mean():.1f} ms, range=[{durations_ms.min():.0f}, {durations_ms.max():.0f}] ms"
+    )
+
+    if intensity_pct == 100:
+        epochs_100_original = epochs_original
+        epochs_100_clean = epochs_clean
+
+if epochs_100_original is None or epochs_100_clean is None:
+    raise RuntimeError("Missing 100% epochs for QC plotting.")
+
+qc_path = plot_helpers.save_exp08_run01_pulse_artifact_qc(
+    artifact_rows,
+    epochs_100_original,
+    epochs_100_clean,
+    intensity_levels,
+    output_directory / "exp08_pulse_artremoved_qc.png",
+)
+
+
+# ============================================================
+# 4) WRITE SUMMARY
+# ============================================================
+
+summary_lines = [
+    "EXP08 RUN01 SINGLE-PULSE ARTIFACT REMOVAL SUMMARY",
+    "=" * 72,
+    f"Source: {stim_vhdr_path.name}",
+    f"Sampling rate: {sampling_rate_hz:.0f} Hz",
+    f"EEG channels retained: {len(raw_eeg.ch_names)}",
+    f"Pulse count: {pulse_samples.size} (10 intensities x 20 pulses)",
+    f"First pulse sample: {first_pulse_sample}",
+    "",
+    "Config:",
+    f"  Baseline window: {baseline_window_ms[0]} to {baseline_window_ms[1]} ms",
+    f"  Artifact window starts: {artifact_start_ms} ms",
+    f"  Search window: {min_artifact_end_ms} to {max_artifact_end_ms} ms",
+    f"  Threshold: max({threshold_sd_multiplier:g} x baseline residual std, {peak_fraction * 100:.1f}% x peak)",
+    f"  Debounce: {debounce_ms} ms",
+    "",
+    "Artifact end statistics by intensity:",
+    f"{'Intensity':>10}  {'Mean ms':>8}  {'Std':>8}  {'Min':>8}  {'Max':>8}  {'Mean threshold uV':>17}",
+]
+for (intensity_pct, durations_ms), (_, thresholds_uv) in zip(artifact_rows, threshold_rows):
+    summary_lines.append(
+        f"{intensity_pct:>9}%  {durations_ms.mean():>8.1f}  {durations_ms.std():>8.1f}  "
+        f"{durations_ms.min():>8.0f}  {durations_ms.max():>8.0f}  {thresholds_uv.mean():>17.1f}"
+    )
+summary_lines.extend([
+    "",
+    "Outputs:",
+    "  exp08_epochs_{10..100}pct_on_artremoved-epo.fif",
+    f"  {qc_path.name}",
+    "  exp08_artremoved_dataviz.png (regenerate with explore_exp08_artremoved_dataviz.py)",
+    "",
+    "Invalid source avoided:",
+    "  exp08t_* files belong to triplet run02 and are not used by this run01 cleanup.",
+])
+summary_text = "\n".join(summary_lines) + "\n"
+for filename in ["exp08_run01_pulse_artifact_summary.txt", "exp08_artifact_removal_summary.txt"]:
+    (output_directory / filename).write_text(summary_text, encoding="utf-8")
+
+print(f"Saved: {qc_path.name}")
+print("Saved: exp08_run01_pulse_artifact_summary.txt")
+print("Saved: exp08_artifact_removal_summary.txt")

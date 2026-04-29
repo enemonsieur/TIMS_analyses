@@ -59,10 +59,21 @@ Multi-intensity ITPC sweep (10%–100%) with 0% pre-pulse baseline reveals **sti
 
 ## 3. Data & Outputs
 
-**Epoch files generated:**
+**Raw epoch files (reference timing only):**
 - `exp08_epochs_{10..100}pct_on-epo.fif` (20 epochs × 28 channels per intensity)
 - `exp08_gt_epochs_{10..100}pct_on-epo.fif` (20 epochs × 1 GT channel per intensity)
 - `exp08_stim_epochs_{10..100}pct_on-epo.fif` (20 epochs × 1 stim trace per intensity)
+
+**Artifact-removed epoch files (PRIMARY — use for all downstream analysis):**
+- `exp08_epochs_{10..100}pct_on_artremoved-epo.fif` (20 epochs × 28 channels per intensity)
+- Source: raw `exp08-STIM-pulse_run01_10-100.vhdr` only; do NOT use `exp08t_*` (triplet run02, wrong event unit)
+- Method: pulse-level per-channel threshold detection + linear interpolation (−10 ms to detected recovery)
+- QC: `exp08_pulse_artremoved_qc.png` (artifact duration heatmaps + before/after Oz overlays at 100%)
+- Summary: `exp08_run01_pulse_artifact_summary.txt` (artifact end times per intensity)
+- Dataviz: `exp08_artremoved_dataviz.png` (channel overview of cleaned epochs)
+- Code: `explore_exp08_pulse_artifact_removal.py` (validated 2026-04-28); helpers in `preprocessing.py` and `plot_helpers.py`
+
+**Run01 correction (2026-04-28):** Previous `exp08t_*_artremoved` files were generated from triplet run02 with the wrong event unit and are invalid for the single-pulse question. All artremoved epoch files were regenerated from run01. Key validation: Oz 100% acute window raw abs max 93340.8 µV → cleaned abs max 6781.2 µV.
 
 **Analysis scripts & visualizations:**
 - `explore_exp08_timecourse_100pct.py` — single-intensity 5-channel + ITPC + stim overlay
@@ -135,11 +146,20 @@ Preliminary observation from raw pulse visualization: individual trial pulse sha
 
 **Forward Ringing Root Cause:** Causal `sosfilt` (bandpass 12.5–13.5 Hz) has impulse response that decays over 2+ seconds. Pre-pulse baseline remains clean (no backward smearing), but artifact ringing contaminates post-pulse ITPC window, inflating apparent coherence at high intensities via deterministic, trial-consistent ringing.
 
+**DRIL update: causal 10-16 Hz vs. `filtfilt` (2026-04-28)**
+- Script: `explore_exp08_causal_10_16_vs_filtfilt_dril.py`
+- Figure: `exp08_causal_10_16_vs_filtfilt_dril_oz_100pct.png`
+- Source: original raw BrainVision VHDR/EEG, Oz, first 100% pulse; no epochs, no averaging, software filters disabled.
+- Result: causal 10-16 Hz filtering avoids backward contamination better than `filtfilt` (pre-pulse RMS 1.67 uV causal vs. 151.38 uV `filtfilt`, -0.25 to -0.02 s).
+- Limitation: causal 10-16 Hz still rings forward after the pulse (post-pulse RMS 260.61 uV, 0.02 to 0.50 s). It is more temporally interpretable, not artifact-free.
+
 **Chosen Strategy: Option D (Hybrid Masking)**
 - Compute ITPC/PLV on full bandpass-filtered signal (preserves component selection and SNR benefits)
 - **Mask artifact-dominated region** (0–0.1 s post-pulse) to avoid ringing contamination
 - Report ITPC/PLV only from off-window (0.1–0.6 s) where artifact settling is complete
 - Trade-off: loses some transient response visibility, but eliminates filter ringing bias
+
+**Superseding interpretation:** masking alone is no longer sufficient as a validation strategy. For pulse-adjacent phase metrics, do not use `filtfilt`. If filtering is necessary, use causal 10-16 Hz only after impulse-response validation and define the usable post-pulse window from measured ringing, not from the visible raw pulse width.
 
 **Prerequisites & Steps:**
 

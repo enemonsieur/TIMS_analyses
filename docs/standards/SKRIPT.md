@@ -27,6 +27,17 @@ Use this guide for analysis scripts in this repo. The target is code a human can
 
 **Why:** A misaligned skeleton catches errors early. If the approach is wrong, you stop before wasting effort on full implementation.
 
+### 1.1 DRIL before trust-sensitive scripts
+
+If the requested script depends on a method that could create the result being
+interpreted, do not treat the method as a black box. Propose a DRIL first; see
+[`DRIL.md`](DRIL.md).
+
+Use this especially for filtering, smoothing, Hilbert phase, decomposition,
+baseline correction, interpolation, fitting, thresholding, joins, and
+aggregation. The DRIL should execute one raw input through one transformation
+before the script turns the output into evidence.
+
 ## 1.5 High-Level Sketch Example (for chat validation)
 
 When proposing a new script, show the skeleton briefly (inline):

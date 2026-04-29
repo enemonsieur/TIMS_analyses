@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+import textwrap
 
 MNE_CONFIG_ROOT = Path(r"C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS")
 (MNE_CONFIG_ROOT / ".mne").mkdir(parents=True, exist_ok=True)
@@ -36,6 +37,7 @@ FILTER_BAND_HZ = (11.0, 14.0)
 FILTER_ORDER = 4
 
 FIGURE_PATH = OUTPUT_DIRECTORY / "exp08_raw_vhdr_filtfilt_step_drill_oz_100pct_single_pulse.png"
+DATAVIZ_FIGURE_PATH = OUTPUT_DIRECTORY / "exp08_raw_vhdr_filtfilt_dataviz_oz_100pct_single_pulse.png"
 SUMMARY_PATH = OUTPUT_DIRECTORY / "exp08_raw_vhdr_filtfilt_step_drill_oz_100pct_single_pulse.txt"
 
 
@@ -285,6 +287,128 @@ plt.close(fig)
 
 
 # ============================================================
+# 7) MAKE CLAIM-FIRST DATAVIZ FIGURE
+# ============================================================
+
+fig, axes = plt.subplots(2, 2, figsize=(12.2, 8.8), constrained_layout=False)
+fig.suptitle(
+    "The EXP08 pulse rings because the 11-14 Hz filter has output memory",
+    fontsize=15,
+    fontweight="bold",
+)
+
+
+def style_claim_axis(axis, ylabel):
+    axis.set_ylabel(ylabel)
+    axis.axvline(0.0, color="#222222", lw=1.0, ls="--")
+    axis.axvspan(-0.02, 0.04, color="#f2c94c", alpha=0.20, lw=0)
+    axis.grid(True, axis="y", color="#dddddd", lw=0.45, alpha=0.55)
+    axis.spines["top"].set_visible(False)
+    axis.spines["right"].set_visible(False)
+
+
+forward_trimmed_uv = forward_v[padlen:-padlen] * 1e6
+final_filtfilt_uv = manual_filtfilt_v * 1e6
+
+ax = axes[0, 0]
+raw_centered_uv = raw_trace_uv - np.median(raw_trace_uv[time_s < -0.2])
+strike_sample_index = int(np.argmin(raw_centered_uv))
+ax.plot(time_s[pulse_mask], raw_centered_uv[pulse_mask], color="#4d4d4d", lw=1.25)
+style_claim_axis(ax, "Raw Oz\nuV from local median")
+ax.set_title("1. The measured pulse is the strike", loc="left", fontsize=10.5)
+ax.annotate(
+    "raw artifact enters the filter",
+    xy=(time_s[strike_sample_index], raw_centered_uv[strike_sample_index]),
+    xytext=(0.10, np.nanpercentile(raw_centered_uv[pulse_mask], 24)),
+    arrowprops={"arrowstyle": "->", "lw": 0.8, "color": "#4d4d4d"},
+    fontsize=9.5,
+    color="#4d4d4d",
+)
+ax.set_xlabel("Time from pulse onset (s)")
+
+ax = axes[0, 1]
+input_terms_uv = float(
+    equation_terms_uv["b0*x[n]"] + equation_terms_uv["b1*x[n-1]"] + equation_terms_uv["b2*x[n-2]"]
+)
+memory_terms_uv = float(equation_terms_uv["-a1*y[n-1]"] + equation_terms_uv["-a2*y[n-2]"])
+bar_labels = ["recent raw\nx terms", "previous output\nmemory terms", "current output\ny[n]"]
+bar_values = [input_terms_uv, memory_terms_uv, equation_output_uv]
+bar_colors = ["#8c8c8c", "#1f77b4", "#d62728"]
+bars = ax.bar(bar_labels, bar_values, color=bar_colors, width=0.62)
+ax.axhline(0.0, color="#222222", lw=0.8)
+ax.set_title("2. One executed equation: memory dominates the next output", loc="left", fontsize=10.5)
+ax.set_ylabel("First SOS contribution at t=0.001 s (uV)")
+ax.grid(True, axis="y", color="#dddddd", lw=0.45, alpha=0.55)
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+for bar, value in zip(bars, bar_values):
+    ax.text(
+        bar.get_x() + bar.get_width() / 2,
+        value + 0.0012,
+        f"{value:.5f}",
+        ha="center",
+        va="bottom",
+        fontsize=8.6,
+        color="#222222",
+    )
+ax.text(
+    0.02,
+    0.93,
+    "y[n] = raw input terms + previous-output memory",
+    transform=ax.transAxes,
+    fontsize=9.3,
+    color="#4d4d4d",
+    va="top",
+)
+
+ax = axes[1, 0]
+ax.plot(time_s[pulse_mask], forward_trimmed_uv[pulse_mask], color="#1f77b4", lw=1.35)
+style_claim_axis(ax, "Forward pass\nuV")
+ax.set_title("3. Forward pass: the resonator rings after the strike", loc="left", fontsize=10.5)
+ax.annotate(
+    "ringing after the pulse",
+    xy=(0.11, forward_trimmed_uv[np.argmin(np.abs(time_s - 0.11))]),
+    xytext=(0.17, np.nanpercentile(forward_trimmed_uv[pulse_mask], 84)),
+    arrowprops={"arrowstyle": "->", "lw": 0.8, "color": "#1f77b4"},
+    fontsize=9.5,
+    color="#1f77b4",
+)
+ax.set_xlabel("Time from pulse onset (s)")
+
+ax = axes[1, 1]
+ax.plot(time_s[pulse_mask], final_filtfilt_uv[pulse_mask], color="#d62728", lw=1.45)
+style_claim_axis(ax, "Final filtfilt\nuV")
+ax.set_title("4. filtfilt runs the same resonator backward, then flips back", loc="left", fontsize=10.5)
+ax.annotate(
+    "pre-pulse ringing",
+    xy=(-0.055, final_filtfilt_uv[np.argmin(np.abs(time_s + 0.055))]),
+    xytext=(-0.23, np.nanpercentile(final_filtfilt_uv[pulse_mask], 85)),
+    arrowprops={"arrowstyle": "->", "lw": 0.8, "color": "#d62728"},
+    fontsize=9.5,
+    color="#d62728",
+)
+ax.annotate(
+    "post-pulse ringing",
+    xy=(0.10, final_filtfilt_uv[np.argmin(np.abs(time_s - 0.10))]),
+    xytext=(0.18, np.nanpercentile(final_filtfilt_uv[pulse_mask], 18)),
+    arrowprops={"arrowstyle": "->", "lw": 0.8, "color": "#d62728"},
+    fontsize=9.5,
+    color="#d62728",
+)
+ax.set_xlabel("Time from pulse onset (s)")
+
+figure_note = (
+    "Measured figure. Source: original BrainVision VHDR/EEG, Oz, first 100% pulse. "
+    "Header check: 1000 Hz, amplifier DC/280 Hz/notch-off, software filters disabled. "
+    "Filter: Butterworth 11-14 Hz, order 4, forward-backward sosfiltfilt."
+)
+fig.text(0.01, 0.026, textwrap.fill(figure_note, width=170), fontsize=8.4, color="#4d4d4d")
+fig.tight_layout(rect=(0, 0.08, 1, 0.94))
+fig.savefig(DATAVIZ_FIGURE_PATH, dpi=220)
+plt.close(fig)
+
+
+# ============================================================
 # 7) WRITE NUMERIC DRILL NOTES
 # ============================================================
 
@@ -320,6 +444,7 @@ with open(SUMMARY_PATH, "w", encoding="utf-8") as summary_file:
     summary_file.write(f"Filter: Butterworth band-pass {FILTER_BAND_HZ[0]:.1f}-{FILTER_BAND_HZ[1]:.1f} Hz, order {FILTER_ORDER}\n")
     summary_file.write(f"Padding length: {padlen} samples = {padlen / sfreq:.3f} s each side\n")
     summary_file.write(f"Manual-vs-Scipy max absolute difference: {max_abs_difference_uv:.6f} uV\n\n")
+    summary_file.write(f"DATAVIZ figure: {DATAVIZ_FIGURE_PATH}\n\n")
     summary_file.write("First SOS section coefficients:\n")
     summary_file.write(f"b0={b0:.12g}, b1={b1:.12g}, b2={b2:.12g}, a1={a1:.12g}, a2={a2:.12g}\n\n")
     summary_file.write("Executed equation at one sample near pulse onset:\n")
@@ -335,5 +460,6 @@ with open(SUMMARY_PATH, "w", encoding="utf-8") as summary_file:
         summary_file.write(f"{row[0]: .3f}, {row[1]}, {row[2]: .6f}, {row[3]: .6f}, {row[4]: .6f}\n")
 
 print(f"Saved: {FIGURE_PATH}")
+print(f"Saved: {DATAVIZ_FIGURE_PATH}")
 print(f"Saved: {SUMMARY_PATH}")
 print(f"Manual-vs-Scipy max abs difference: {max_abs_difference_uv:.6f} uV")

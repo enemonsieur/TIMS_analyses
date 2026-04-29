@@ -1,0 +1,75 @@
+================================================================================
+EXP08 ARTIFACT FILTERING SUMMARY: Raw vs. SASS vs. SSD
+================================================================================
+
+ANALYSIS OVERVIEW:
+  Compared three spatial filter paths for stimulus artifact suppression:
+    1. Raw: Fixed channel locked at 10% intensity (best SNR)
+    2. SASS: Covariance-based artifact subtraction (ON − late-OFF)
+    3. SSD: Signal-dominance eigendecomposition (signal vs. view bands)
+
+RANKING CRITERION: SNR (signal-band power / view-band power, linear ratio)
+
+TIME WINDOWS:
+    ON: -0.5 to 1.0 s (stimulus present, full epoch)
+    ITPC/PLV: -0.5 to 0.5 s (phase locking analysis window)
+    late-OFF: 1.5 to 3.2 s (noise reference)
+
+FREQUENCY BANDS:
+    Signal band: 12.5–13.5 Hz (stimulus fundamental)
+    View band: 4.0–20.0 Hz (broadband reference)
+
+FILTERING:
+    In-memory causal low-pass: 45.0 Hz, order 4
+    Phase-band helper filters: causal band-pass, no zero-phase 50 Hz notch
+
+================================================================================
+RESULTS BY INTENSITY
+================================================================================
+Intensity    Raw SNR      SASS SNR     SSD SNR      Raw ITPC     SASS ITPC    SSD ITPC    
+--------------------------------------------------------------------------------
+10%          1.007        0.529        6.591        0.142        0.140        0.977       
+20%          1.006        0.529        7.209        0.221        0.219        0.987       
+30%          0.987        0.530        7.527        0.195        0.209        0.967       
+40%          1.043        0.539        6.907        0.420        0.419        0.991       
+50%          1.012        0.535        7.325        0.160        0.159        0.993       
+60%          1.032        0.550        7.829        0.348        0.346        0.994       
+70%          0.920        0.531        7.793        0.420        0.437        0.990       
+80%          0.939        0.532        7.376        0.266        0.295        0.980       
+90%          2.415        1.167        8.254        0.477        0.454        0.984       
+100%         2.802        1.601        7.588        0.477        0.447        0.995       
+================================================================================
+
+SELECTED CHANNELS/COMPONENTS:
+    Raw (locked): P8
+    SASS by intensity:
+      10%: P4
+      20%: P4
+      30%: P4
+      40%: P8
+      50%: P8
+      60%: P8
+      70%: P4
+      80%: FC6
+      90%: P8
+      100%: P8
+    SSD by intensity:
+      10%: Component 0
+      20%: Component 0
+      30%: Component 0
+      40%: Component 0
+      50%: Component 0
+      60%: Component 0
+      70%: Component 0
+      80%: Component 0
+      90%: Component 0
+      100%: Component 0
+
+================================================================================
+OUTPUT FILES
+================================================================================
+  exp08_art_filtering_lowpass45_itpc_timecourse_by_intensity.png
+  exp08_art_filtering_lowpass45_itpc_summary.png
+  exp08_art_filtering_lowpass45_plv_summary.png
+  exp08_art_filtering_lowpass45_phase_grid_*pct.png (10 files, one per intensity)
+  exp08_art_filtering_lowpass45_summary.txt

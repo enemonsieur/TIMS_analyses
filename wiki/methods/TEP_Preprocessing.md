@@ -105,63 +105,80 @@ evoked_post = epochs_post.average()
 
 **CRITICAL**: Filtering during the pulse artifact window is invalid because the bandpass filter rings for 2+ s post-pulse, spreading the artifact across the entire analysis window and corrupting ITPC/PLV metrics. Single-pulse TMS experiments require artifact removal **before any filtering**.
 
-### Method: Per-Epoch Per-Channel Threshold Detection + Linear Interpolation
+**EXP08 run01 correction (2026-04-28):** The valid single-pulse artifact-removal source is raw `exp08-STIM-pulse_run01_10-100.vhdr`, and the cleaned EEG outputs are `exp08_epochs_{10..100}pct_on_artremoved-epo.fif`. Do not use `exp08t_*_artremoved` for single-pulse work; those files belong to triplet run02 and used the wrong event unit for this question.
 
-For each (epoch, channel):
+### Method: Continuous-Raw Pulse-Level Threshold Detection + Linear Interpolation
 
-1. **Compute pre-pulse baseline** (−100 to −5 ms): mean and standard deviation
-2. **Walk forward from pulse onset** sample-by-sample until both:
-   - Signal is close to baseline: |signal − baseline_mean| < 5×baseline_std
-   - Signal is stable/decreasing: current_dev ≤ prev_dev × 1.1 (decaying toward baseline)
-   - Confirm with 5 consecutive samples (debounce)
-3. **Extract baselines**:
-   - Pre-anchor: baseline_mean from step 1
-   - Post-anchor: mean of 10 ms of signal after artifact recovery
-4. **Interpolate**: Replace artifact region with linear ramp from pre-anchor to post-anchor
-5. **Hard cap**: Never crop >200 ms per trial (safety)
+For each scheduled run01 pulse and EEG channel:
 
-### Results (EXP08, 20 epochs × 28 channels per intensity)
+1. **Build run01 pulse schedule**: 200 pulse centers from sample 20530 at 5.0 s spacing (10 intensities x 20 pulses).
+2. **Fit local pre-pulse drift** in continuous Volts data from -100 to -10 ms.
+3. **Start interpolation at -10 ms** because the run01 EEG impulse peak is 3 ms before the scheduled pulse sample.
+4. **Detect recovery** from +20 to +200 ms using `max(5 x baseline residual std, 2% x pulse peak deviation)`.
+5. **Debounce recovery**: require 20 ms of sustained below-threshold signal.
+6. **Interpolate**: replace the artifact interval with the local linear drift continuation.
+7. **Epoch cleaned raw** into the existing ON windows; STIM/GT reference epoch files remain raw timing references.
 
-| Intensity | Mean artifact duration | Std | Range | Notes |
-|-----------|------------------------|-----|-------|-------|
-| 10% | 150.3 ms | 59.2 | 8–200 ms | Low intensity, slow decay |
-| 50% | 133.3 ms | 72.6 | 1–200 ms | Moderate, many hit cap |
-| 100% | 71.7 ms | 79.9 | 1–200 ms | High intensity, faster decay but noisier |
+### Results (EXP08 run01, 20 pulses x 28 channels per intensity)
+
+All 10 single-pulse intensities were regenerated from raw run01. Current summaries are written to `exp08_run01_pulse_artifact_summary.txt`; the acute removal window is -10 to +20 ms for nearly all channels, with one 20% pulse/channel extending to +29 ms.
+
+| Intensity | Mean end ms | Std | Min | Max | Mean threshold uV |
+|-----------|------------:|----:|----:|----:|------------------:|
+| 10% | 20.0 | 0.0 | 20 | 20 | 10.8 |
+| 20% | 20.0 | 0.4 | 20 | 29 | 32.0 |
+| 30% | 20.0 | 0.0 | 20 | 20 | 83.0 |
+| 40% | 20.0 | 0.0 | 20 | 20 | 157.3 |
+| 50% | 20.0 | 0.0 | 20 | 20 | 320.9 |
+| 60% | 20.0 | 0.0 | 20 | 20 | 519.5 |
+| 70% | 20.0 | 0.0 | 20 | 20 | 712.9 |
+| 80% | 20.0 | 0.0 | 20 | 20 | 875.9 |
+| 90% | 20.0 | 0.0 | 20 | 20 | 1005.9 |
+| 100% | 20.0 | 0.0 | 20 | 20 | 1132.1 |
+
+100% Oz acute-window validation: raw abs max 93,340.8 uV -> cleaned abs max 6,781.2 uV. The visible pulse spike is removed in `exp08_pulse_artremoved_qc.png` and `exp08_artremoved_dataviz.png`.
 
 ### Outputs
 
-- `exp08t_epochs_{10,50,100}pct_on_artremoved-epo.fif` — cleaned epochs ready for filtering
+- `exp08_epochs_{10..100}pct_on_artremoved-epo.fif` — cleaned run01 single-pulse epochs ready for filtering
 - `exp08_pulse_artremoved_qc.png` — QC heatmaps (artifact duration per channel/epoch) + before/after overlays
+- `exp08_artremoved_dataviz.png` — all-intensity Oz before/after overview
+- `exp08_run01_pulse_artifact_summary.txt` — source/config/statistics summary
 
-### Why Per-Epoch Per-Channel?
+### Why Pulse-Level Per-Channel?
 
-At 100% intensity, baseline is bimodal (±315 µV) and within-epoch decay reaches −3000 µV. Global cropping fails because the "before" and "after" anchor points vary significantly across epochs. Per-epoch detection adapts to each trial's unique artifact signature and baseline state.
+At 100% intensity, baseline state and residual offsets vary strongly by channel and pulse. Global cropping fails because the "before" and "after" anchor points are not shared across channels. Pulse-level per-channel interpolation adapts to each artifact signature before the triplet-independent run01 epochs are rebuilt.
 
 ### Implementation
 
 ```python
-PRE_BASELINE_START_MS = -100   # capture current baseline state
-PRE_BASELINE_END_MS = -5
-K_THRESHOLD = 5                # threshold: k × baseline_std
-DEBOUNCE_SAMPLES = 5           # confirmation window
-MAX_ARTIFACT_MS = 200          # hard cap
-POST_ANCHOR_SAMPLES = 10       # 10 ms post-recovery for anchor
-
-# Detect and remove artifact for all epochs/channels
-epochs_clean, artifact_end_samples = remove_pulse_artifact(epochs, config)
+clean_data_v, durations_ms, thresholds_uv = preprocessing.interpolate_pulse_artifacts_by_threshold(
+    raw_eeg.get_data(),
+    pulse_samples,
+    sampling_rate_hz,
+    baseline_window_ms=(-100, -10),
+    artifact_start_ms=-10,
+    min_artifact_end_ms=20,
+    max_artifact_end_ms=200,
+    peak_window_ms=(0, 20),
+    threshold_sd_multiplier=5.0,
+    peak_fraction=0.02,
+    debounce_ms=20,
+)
 ```
 
 ### Known Limitations
 
-- **Threshold parameter k=5**: Conservative for low intensities (slow decay), may under-crop at 100% where artifact decays faster. May require intensity-dependent k.
-- **Stability criterion**: Requires signal to be decreasing; brief noise spikes can delay detection by 1 sample at a time.
+- **Acute artifact only**: This removes the pulse spike window; it does not prove post-pulse physiology or filter-ringing windows are artifact-free.
+- **Threshold parameter k=5**: Current run01 results are dominated by the minimum +20 ms end, with one 20% pulse/channel at +29 ms. Revisit only if downstream QC shows residual acute spikes.
 - **No spatial modeling**: Each channel detected independently; may miss coordinated artifact patterns across electrode array.
 
 ### Validation
 
-1. Visual inspection of heatmaps: artifact_end_samples should increase with intensity (slower recovery) — currently: 10% > 50% > 100%, suggesting high-intensity decay is faster once above threshold
-2. Before/after overlay: artifact spike removed, baseline smooth on both sides
-3. Downstream ITPC/SNR: compare SNR metrics on raw vs. artremoved epochs (should improve significantly)
+1. Timing: 200 run01 pulses, 20 pulses per intensity, 5.0 s spacing from sample 20530.
+2. Before/after overlays: acute pulse spike removed in Oz and worst 100% channel views.
+3. Numeric residual check: 100% Oz acute-window abs max 93,340.8 uV raw -> 6,781.2 uV cleaned.
+4. Downstream ITPC/SNR/TEP still need rerun from `*_artremoved-epo.fif`; filtered post-pulse windows remain invalid until impulse response is checked.
 
 ## Relevant Scripts
 

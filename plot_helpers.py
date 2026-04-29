@@ -108,6 +108,78 @@ def style_clean_axis(axis, grid_alpha=0.15):
     axis.spines["right"].set_visible(False)
 
 
+def save_exp08_run01_pulse_artifact_qc(
+    artifact_duration_rows,
+    epochs_100_original,
+    epochs_100_clean,
+    intensity_levels,
+    output_path,
+    plot_window_s=(-0.05, 0.35),
+) -> Path:
+    """Save the EXP08 run01 single-pulse artifact-removal QC figure."""
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fig = plt.figure(figsize=(18, 28))
+    grid = fig.add_gridspec(12, 3, hspace=0.55, wspace=0.42)
+
+    for row, (intensity_pct, durations_ms) in enumerate(artifact_duration_rows):
+        axis = fig.add_subplot(grid[row, 0])
+        image = axis.imshow(durations_ms, aspect="auto", cmap="viridis", origin="lower")
+        axis.set_title(f"{intensity_pct}% artifact end (ms)")
+        axis.set_xlabel("Channel index")
+        axis.set_ylabel("Epoch")
+        plt.colorbar(image, ax=axis, label="ms")
+
+    trend_axis = fig.add_subplot(grid[0:4, 1])
+    means = [durations_ms.mean() for _, durations_ms in artifact_duration_rows]
+    stds = [durations_ms.std() for _, durations_ms in artifact_duration_rows]
+    trend_axis.errorbar(intensity_levels, means, yerr=stds, fmt="o-", capsize=4, color="steelblue")
+    trend_axis.set_xlabel("Intensity (%)")
+    trend_axis.set_ylabel("Artifact end after pulse (ms)")
+    trend_axis.set_title("Run01 single-pulse artifact duration")
+    trend_axis.set_xticks(intensity_levels)
+    trend_axis.grid(True, alpha=0.3)
+
+    times_s = epochs_100_original.times
+    plot_mask = (times_s >= plot_window_s[0]) & (times_s <= plot_window_s[1])
+    plot_time_s = times_s[plot_mask]
+    cleaned_uv = epochs_100_clean.get_data() * 1e6
+    cleaned_window = cleaned_uv[:, :, plot_mask]
+    worst_channel_index = int(np.argmax(np.max(np.abs(cleaned_window), axis=(0, 2))))
+    plot_channels = ["Oz", epochs_100_clean.ch_names[worst_channel_index]]
+
+    for column, channel_name in enumerate(plot_channels, start=1):
+        channel_index = epochs_100_original.ch_names.index(channel_name)
+        for panel, (label, epochs_obj, color) in enumerate(
+            [
+                ("before", epochs_100_original, "gray"),
+                ("after", epochs_100_clean, "steelblue"),
+            ]
+        ):
+            axis = fig.add_subplot(grid[4 + panel * 4:8 + panel * 4, column])
+            traces_uv = epochs_obj.get_data()[:, channel_index, :][:, plot_mask] * 1e6
+            for trace_uv in traces_uv:
+                axis.plot(plot_time_s, trace_uv, color=color, alpha=0.22, linewidth=0.6)
+            axis.plot(plot_time_s, traces_uv.mean(axis=0), color=color, linewidth=1.8)
+            axis.axvline(0, color="red", linestyle="--", linewidth=1.0, alpha=0.8)
+            axis.set_title(f"100% {channel_name} {label}")
+            axis.set_xlabel("Time (s)")
+            axis.set_ylabel("uV")
+            axis.grid(True, alpha=0.25)
+
+    fig.suptitle(
+        "EXP08 Run01 Single-Pulse Artifact Removal QC\n"
+        "Raw run01 VHDR -> per-pulse per-channel interpolation -> cleaned ON epochs",
+        fontsize=13,
+        fontweight="bold",
+        y=0.995,
+    )
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    return output_path
+
+
 def save_timing_windows_figure(
     timing_axis_s,
     stim_segment,
@@ -295,6 +367,7 @@ def save_plv_method_summary_figure(
     output_path,
     title,
     ylabel="GT-referenced PLV",
+    xlabel="Run02 stimulation block (%)",
 ):
     """Save one multi-method PLV summary figure across stimulation blocks."""
     figure, axis = plt.subplots(figsize=(9.8, 4.8), constrained_layout=True)
@@ -328,7 +401,7 @@ def save_plv_method_summary_figure(
             fontsize=8,
         )
     axis.set(
-        xlabel="Run02 stimulation block (%)",
+        xlabel=xlabel,
         ylabel=ylabel,
         xticks=x_values,
         ylim=(0.0, 1.02),

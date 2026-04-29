@@ -17,7 +17,12 @@
       "Bash(python analyze_exp06_run02_snr_selection_plots.py)",
       "Bash(python explore_exp08_art_filtering.py)",
       "Bash(python explore_exp08_tep_qc_timeseries.py)",
-      "Bash(python explore_exp08_triplet_epochs.py)"
+      "Bash(python explore_exp08_triplet_epochs.py)",
+      "Bash(python explore_exp08_first_pulse.py)",
+      "Bash(python explore_exp08_pulse_artifact_removal.py)",
+      "Bash(python simulation/extract_dual_coil_depth_efield.py)",
+      "Bash(where simnibs *)",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")"
     ]
   }
 }

@@ -1,7 +1,7 @@
 ---
 type: home
 status: active
-updated: 2026-04-18
+updated: 2026-04-28
 tags:
   - wiki
   - tims
@@ -9,7 +9,11 @@ tags:
 
 # TIMS Wiki Home
 
-## Status Update (2026-04-26)
+## Status Update (2026-04-28)
+
+**EXP08 run01 artifact removal corrected (2026-04-28):** `exp08_epochs_{10..100}pct_on_artremoved-epo.fif` regenerated from raw `exp08-STIM-pulse_run01_10-100.vhdr` via pulse-level per-channel threshold detection + linear interpolation. Previous `exp08t_*_artremoved` files (triplet run02, wrong event unit) are invalid for single-pulse work. Oz 100% acute-window: raw 93,340.8 µV → cleaned 6,781.2 µV. **All downstream ITPC/SNR/TEP analyses must use artremoved epochs.** See [[experiments/EXP08|EXP08 §Artifact Removal Pipeline]] and [[methods/TEP_Preprocessing|TEP Preprocessing §Pulse Artifact Removal]].
+
+**EXP08 filter DRIL added (2026-04-28):** [[methods/Filter_Impulse_Response|Filter impulse response]] shows `filtfilt` is not acceptable for pulse-adjacent interpretation because it mirrors artifact ringing backward into the pre-pulse period. Causal 10-16 Hz is more interpretable, but still rings forward after the pulse.
 
 **Literature search framework updated:** [[methods/Literature_Search_Framework|Literature search framework]] now requires causal-chain paper notes and context-preserving search angles. New [[methods/TIMS_Search_Direction|TIMS search direction]] stores the current TIMS-specific goal, advantages, constraints, accepted angles, and reject rules.
 
@@ -52,7 +56,11 @@ tags:
 - [[experiments/EXP05|EXP05]]: phantom cTBS `30%` vs `100%`, `~7.08 Hz` GT, and the design failure that motivated a cleaner target frequency.
 - [[experiments/EXP06|EXP06]]: phantom iTBS intensity sweep with the current raw vs SASS vs SSD vs metric-selection disputes.
 - [[experiments/EXP07|EXP07]]: continuous dose-response (10–100% modulation) iTBS, 204 ON blocks extracted, ready for per-intensity analysis.
-- [[experiments/EXP08|EXP08]]: single-pulse dose-response (10–100% intensity, 20 pulses per level), 200 epochs extracted. Spatial filter comparison (SSD > SASS > Raw) complete; ITPC multi-intensity analysis reveals baseline 0.76 but stimulation drops to 0.25–0.48 in quiet windows—not artifact masking, but stimulation-induced phase loss. **TEP cleanup (2026-04-23):** Exponential decay removal + 0.5–42 Hz bandpass filter on full epoch removes DC residuals effectively. Valid TEP extraction for 10–40% intensity (baselines <15 µV); 50–100% shows decay saturation (POST ranges 1.4K–17K µV). Implemented in [[methods/TEP_Preprocessing|TEP preprocessing]] with results table. Evidence: [`explore_exp08_tep.py`](../explore_exp08_tep.py) validated output.
+- [[experiments/EXP08|EXP08]]: single-pulse dose-response (10–100% intensity, 20 pulses per level), 200 epochs extracted. Spatial filter comparison (SSD > SASS > Raw) complete; ITPC multi-intensity analysis reveals baseline 0.76 but stimulation drops to 0.25–0.48 in quiet windows—not artifact masking, but stimulation-induced phase loss. **TEP cleanup (2026-04-23):** Exponential decay removal + 0.5–42 Hz bandpass filter on full epoch removes DC residuals effectively. Valid TEP extraction for 10–40% intensity (baselines <15 µV); 50–100% shows decay saturation (POST ranges 1.4K–17K µV). **Artifact removal (2026-04-28):** Pulse-level per-channel threshold detection + linear interpolation on run01; `exp08_epochs_{10..100}pct_on_artremoved-epo.fif` are now the PRIMARY source for all analyses. Previous `exp08t_*` files (run02, wrong event unit) retired. Evidence: [`explore_exp08_pulse_artifact_removal.py`](../explore_exp08_pulse_artifact_removal.py).
+
+## Simulations
+
+- [[simulation/SIM_dual_coil_cz|SIM Dual-Coil Cz]]: SimNIBS combined E-field for dual-coil ±40 mm setup centered on Cz. ROI weighted mean magET at 30 mm depth: **19.486 V/m** (5 mm GM sphere). Whole-GM map, lateral hemisphere view, and distance-decay profile generated.
 
 ## Methods
 
@@ -65,5 +73,6 @@ tags:
 - [[methods/ITPC|ITPC]]: useful secondary time-resolved phase summary, not a standalone recovery proof.
 - [[methods/Artifact_Modeling|Artifact modeling]]: current blocker method for high-intensity cleanup and EXP04 translation.
 - [[methods/Artifact_Removal_Validation|Artifact removal validation]]: exploration framework for distinguishing genuine artifact suppression from masking; multi-metric approach with open questions for novel validation paths.
+- [[methods/Filter_Impulse_Response|Filter impulse response]]: DRIL-backed check for whether filtering itself creates pulse-locked temporal structure; EXP08 shows causal 10-16 Hz avoids backward ringing better than `filtfilt` but still rings forward.
 - [[methods/Literature_Search_Framework|Literature search framework]]: general workflow for context-preserving search angles and causal-chain paper notes.
 - [[methods/TIMS_Search_Direction|TIMS search direction]]: TIMS-specific paper-search context, accepted angles, and reject rules.

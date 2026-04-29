@@ -1,0 +1,26 @@
+EXP08 DRIL: CAUSAL 10-16 HZ VS FILTFILT
+================================================================================
+
+Input raw file: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp08-STIM-pulse_run01_10-100.vhdr
+Provenance: raw BrainVision VHDR/EEG, software filters disabled, no epochs, no averaging
+Channel: Oz
+Selected pulse: 100% index 0; absolute sample 470503
+Raw slice samples: start=469503, stop=472503, n=3000
+Filter: Butterworth band-pass 10.0-16.0 Hz, order 4, Q=2.167
+
+Executed first-section equation at t=0.001 s:
+y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
+b0*x[n]: 0.000776589 uV
+b1*x[n-1]: 0.001553307 uV
+b2*x[n-2]: 0.000776554 uV
+-a1*y[n-1]: 0.814684326 uV
+-a2*y[n-2]: -0.401147364 uV
+sum -> y[n]: 0.416643411 uV
+
+RMS in pre/post windows:
+causal_pre_rms_uV (-0.25 to -0.02 s): 1.668135
+filtfilt_pre_rms_uV (-0.25 to -0.02 s): 151.377214
+causal_post_rms_uV (0.02 to 0.50 s): 260.606764
+filtfilt_post_rms_uV (0.02 to 0.50 s): 185.304576
+
+Figure: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_causal_10_16_vs_filtfilt_dril_oz_100pct.png

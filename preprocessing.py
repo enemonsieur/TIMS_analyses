@@ -88,17 +88,20 @@ def filter_signal(
     sampling_rate_hz: float,
     low_hz: float,
     high_hz: float,
-    notch_hz: float = 50.0,
+    notch_hz: float | None = 50.0,
     notch_q: float = 30.0,
     order: int = 4,
 ) -> np.ndarray:
-    """Apply notch + bandpass filtering to 1D or 2D arrays."""
+    """Apply optional notch + causal bandpass filtering to arrays along the last axis."""
     if low_hz <= 0 or high_hz <= low_hz:
         raise ValueError("Filter limits must satisfy 0 < low_hz < high_hz.")
 
     input_array = np.asarray(data, dtype=float)
-    notch_b, notch_a = iirnotch(w0=notch_hz, Q=notch_q, fs=sampling_rate_hz)
-    notch_filtered = filtfilt(notch_b, notch_a, input_array, axis=-1)
+    if notch_hz is None:
+        notch_filtered = input_array
+    else:
+        notch_b, notch_a = iirnotch(w0=notch_hz, Q=notch_q, fs=sampling_rate_hz)
+        notch_filtered = filtfilt(notch_b, notch_a, input_array, axis=-1)
 
     bandpass_sos = butter(order, [low_hz, high_hz], btype="bandpass", fs=sampling_rate_hz, output="sos")
     bandpassed = sosfilt(bandpass_sos, notch_filtered, axis=-1)
@@ -108,6 +111,191 @@ def filter_signal(
     if not np.all(np.isfinite(bandpassed)):
         raise RuntimeError("Filtering produced non-finite values.")
     return bandpassed
+
+
+def milliseconds_to_samples(milliseconds: float, sampling_rate_hz: float) -> int:
+    """Convert a millisecond offset to nearest samples."""
+    return int(round(float(milliseconds) / 1000.0 * float(sampling_rate_hz)))
+
+
+def build_fixed_interval_event_samples(
+    first_event_sample: int,
+    event_count: int,
+    inter_event_interval_s: float,
+    sampling_rate_hz: float,
+    n_times: int,
+    pre_margin_s: float = 0.0,
+    post_margin_s: float = 0.0,
+) -> np.ndarray:
+    """Build and validate deterministic event centers at a fixed interval."""
+    if event_count < 1:
+        raise ValueError("event_count must be positive.")
+    if inter_event_interval_s <= 0:
+        raise ValueError("inter_event_interval_s must be positive.")
+
+    interval_samples = int(round(float(inter_event_interval_s) * float(sampling_rate_hz)))
+    event_samples = int(first_event_sample) + np.arange(int(event_count), dtype=int) * interval_samples
+    pre_margin_samples = int(round(abs(float(pre_margin_s)) * float(sampling_rate_hz)))
+    post_margin_samples = int(round(abs(float(post_margin_s)) * float(sampling_rate_hz)))
+
+    if event_samples[0] < pre_margin_samples or event_samples[-1] + post_margin_samples >= int(n_times):
+        raise RuntimeError("Fixed-interval event schedule does not fit recording bounds.")
+    if not np.all(np.diff(event_samples) == interval_samples):
+        raise RuntimeError("Fixed-interval event schedule is not evenly spaced.")
+    return event_samples
+
+
+def split_event_samples_by_blocks(
+    event_samples: np.ndarray,
+    block_labels: list[int],
+    events_per_block: int,
+) -> dict[int, np.ndarray]:
+    """Split sequential event samples into labeled equal-size blocks."""
+    samples = np.asarray(event_samples, dtype=int).ravel()
+    expected_count = len(block_labels) * int(events_per_block)
+    if samples.size != expected_count:
+        raise ValueError(f"Expected {expected_count} events, got {samples.size}.")
+
+    blocks = {}
+    for block_index, label in enumerate(block_labels):
+        start = block_index * int(events_per_block)
+        stop = start + int(events_per_block)
+        blocks[int(label)] = samples[start:stop]
+    return blocks
+
+
+def _fit_local_linear_drift(
+    signal_v: np.ndarray,
+    center_sample: int,
+    sampling_rate_hz: float,
+    baseline_window_ms: tuple[float, float],
+) -> tuple[float, float, float]:
+    """Fit pre-event local drift and return slope, intercept, residual std."""
+    start = center_sample + milliseconds_to_samples(baseline_window_ms[0], sampling_rate_hz)
+    stop = center_sample + milliseconds_to_samples(baseline_window_ms[1], sampling_rate_hz)
+    baseline_indices = np.arange(start, stop, dtype=int)
+    baseline_time_s = (baseline_indices - center_sample) / float(sampling_rate_hz)
+    baseline_values = signal_v[baseline_indices]
+
+    slope, intercept = np.polyfit(baseline_time_s, baseline_values, 1)
+    residuals = baseline_values - (slope * baseline_time_s + intercept)
+    return float(slope), float(intercept), float(np.std(residuals))
+
+
+def _linear_drift_value(
+    sample_index: int,
+    center_sample: int,
+    sampling_rate_hz: float,
+    slope: float,
+    intercept: float,
+) -> float:
+    """Evaluate a local linear drift model at one sample."""
+    return float(slope * ((sample_index - center_sample) / float(sampling_rate_hz)) + intercept)
+
+
+def _detect_pulse_recovery_sample(
+    signal_v: np.ndarray,
+    pulse_sample: int,
+    sampling_rate_hz: float,
+    baseline_window_ms: tuple[float, float],
+    min_artifact_end_ms: float,
+    max_artifact_end_ms: float,
+    peak_window_ms: tuple[float, float],
+    threshold_sd_multiplier: float,
+    peak_fraction: float,
+    debounce_ms: float,
+) -> tuple[int, float, float, float]:
+    """Find the first sustained return below a drift-aware pulse threshold."""
+    slope, intercept, residual_std = _fit_local_linear_drift(
+        signal_v,
+        pulse_sample,
+        sampling_rate_hz,
+        baseline_window_ms,
+    )
+    peak_start = pulse_sample + milliseconds_to_samples(peak_window_ms[0], sampling_rate_hz)
+    peak_stop = pulse_sample + milliseconds_to_samples(peak_window_ms[1], sampling_rate_hz)
+    peak_indices = np.arange(peak_start, peak_stop, dtype=int)
+    peak_time_s = (peak_indices - pulse_sample) / float(sampling_rate_hz)
+    expected_peak = slope * peak_time_s + intercept
+    peak_deviation = float(np.max(np.abs(signal_v[peak_indices] - expected_peak)))
+    threshold_v = max(float(threshold_sd_multiplier) * residual_std, float(peak_fraction) * peak_deviation)
+
+    search_start = pulse_sample + milliseconds_to_samples(min_artifact_end_ms, sampling_rate_hz)
+    search_stop = pulse_sample + milliseconds_to_samples(max_artifact_end_ms, sampling_rate_hz)
+    debounce_samples = max(1, milliseconds_to_samples(debounce_ms, sampling_rate_hz))
+    consecutive = 0
+
+    for sample_index in range(search_start, min(search_stop, signal_v.size)):
+        expected_now = _linear_drift_value(sample_index, pulse_sample, sampling_rate_hz, slope, intercept)
+        if abs(signal_v[sample_index] - expected_now) <= threshold_v:
+            consecutive += 1
+            if consecutive >= debounce_samples:
+                return sample_index - debounce_samples + 1, slope, intercept, threshold_v
+        else:
+            consecutive = 0
+
+    return min(search_stop, signal_v.size - 1), slope, intercept, threshold_v
+
+
+def interpolate_pulse_artifacts_by_threshold(
+    eeg_data_v: np.ndarray,
+    pulse_samples: np.ndarray,
+    sampling_rate_hz: float,
+    baseline_window_ms: tuple[float, float],
+    artifact_start_ms: float,
+    min_artifact_end_ms: float,
+    max_artifact_end_ms: float,
+    peak_window_ms: tuple[float, float],
+    threshold_sd_multiplier: float,
+    peak_fraction: float,
+    debounce_ms: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Interpolate single-pulse artifacts per pulse and channel in continuous Volts data.
+
+    Returns:
+    - cleaned_data_v: same shape as eeg_data_v, still in Volts
+    - durations_ms: pulse x channel artifact end times relative to pulse center
+    - thresholds_uv: pulse x channel threshold values for QC summaries
+    """
+    clean_data_v = np.array(eeg_data_v, dtype=float, copy=True)
+    centers = np.asarray(pulse_samples, dtype=int).ravel()
+    if clean_data_v.ndim != 2:
+        raise ValueError("eeg_data_v must have shape (n_channels, n_times).")
+    if centers.size < 1:
+        raise ValueError("pulse_samples must contain at least one pulse.")
+
+    start_offset = milliseconds_to_samples(artifact_start_ms, sampling_rate_hz)
+    durations_ms = np.zeros((centers.size, clean_data_v.shape[0]), dtype=float)
+    thresholds_uv = np.zeros_like(durations_ms)
+
+    for pulse_index, pulse_sample in enumerate(centers):
+        artifact_start = pulse_sample + start_offset
+        for channel_index in range(clean_data_v.shape[0]):
+            signal_v = clean_data_v[channel_index]
+            artifact_end, slope, intercept, threshold_v = _detect_pulse_recovery_sample(
+                signal_v,
+                int(pulse_sample),
+                sampling_rate_hz,
+                baseline_window_ms,
+                min_artifact_end_ms,
+                max_artifact_end_ms,
+                peak_window_ms,
+                threshold_sd_multiplier,
+                peak_fraction,
+                debounce_ms,
+            )
+            if artifact_end <= artifact_start:
+                raise RuntimeError("Detected pulse artifact end precedes artifact start.")
+
+            artifact_region = np.arange(artifact_start, artifact_end, dtype=int)
+            start_value = _linear_drift_value(artifact_start, pulse_sample, sampling_rate_hz, slope, intercept)
+            end_value = _linear_drift_value(artifact_end, pulse_sample, sampling_rate_hz, slope, intercept)
+            signal_v[artifact_region] = np.linspace(start_value, end_value, artifact_region.size, endpoint=False)
+
+            durations_ms[pulse_index, channel_index] = (artifact_end - pulse_sample) / float(sampling_rate_hz) * 1000.0
+            thresholds_uv[pulse_index, channel_index] = threshold_v * 1e6
+
+    return clean_data_v, durations_ms, thresholds_uv
 
 
 def load_exp06_saved_ssd_artifact(weights_path: Path) -> dict[str, Any]:
@@ -200,6 +388,7 @@ def compute_band_limited_epoch_triplet_metrics(
     reference_epochs: np.ndarray,
     sampling_rate_hz: float,
     band_hz: tuple[float, float],
+    filter_kwargs: dict[str, Any] | None = None,
 ) -> dict[str, np.ndarray]:
     """Filter matched epoch sets and compute z-scored means plus GT-locked ITPC."""
     signal_array = np.asarray(signal_epochs, dtype=float)
@@ -208,8 +397,9 @@ def compute_band_limited_epoch_triplet_metrics(
     if n_epochs < 1:
         raise ValueError("Need at least one matched epoch to compute band-limited metrics.")
 
-    signal_band_epochs = filter_signal(signal_array[:n_epochs], sampling_rate_hz, band_hz[0], band_hz[1])
-    reference_band_epochs = filter_signal(reference_array[:n_epochs], sampling_rate_hz, band_hz[0], band_hz[1])
+    filter_options = {} if filter_kwargs is None else dict(filter_kwargs)
+    signal_band_epochs = filter_signal(signal_array[:n_epochs], sampling_rate_hz, band_hz[0], band_hz[1], **filter_options)
+    reference_band_epochs = filter_signal(reference_array[:n_epochs], sampling_rate_hz, band_hz[0], band_hz[1], **filter_options)
     phase_diff = np.angle(hilbert(signal_band_epochs, axis=-1)) - np.angle(hilbert(reference_band_epochs, axis=-1))
     itpc_curve = np.abs(np.mean(np.exp(1j * phase_diff), axis=0))
 
@@ -1140,6 +1330,7 @@ def sample_phase_differences(
     sampling_rate_hz: float,
     reference_frequency_hz: float,
     signal_band_hz: tuple[float, float] = None,
+    filter_kwargs: dict[str, Any] | None = None,
 ) -> np.ndarray:
     """Sample wrapped target-vs-reference phase differences once per reference cycle.
 
@@ -1150,8 +1341,9 @@ def sample_phase_differences(
 
     # Filter to signal band before Hilbert (if band specified)
     if signal_band_hz is not None:
-        reference_vector = filter_signal(reference_vector[np.newaxis, :], sampling_rate_hz, signal_band_hz[0], signal_band_hz[1])[0]
-        target_vector = filter_signal(target_vector[np.newaxis, :], sampling_rate_hz, signal_band_hz[0], signal_band_hz[1])[0]
+        filter_options = {} if filter_kwargs is None else dict(filter_kwargs)
+        reference_vector = filter_signal(reference_vector[np.newaxis, :], sampling_rate_hz, signal_band_hz[0], signal_band_hz[1], **filter_options)[0]
+        target_vector = filter_signal(target_vector[np.newaxis, :], sampling_rate_hz, signal_band_hz[0], signal_band_hz[1], **filter_options)[0]
 
     min_peak_distance_samples = max(1, int(round(0.8 * sampling_rate_hz / reference_frequency_hz)))
     reference_peaks, _ = find_peaks(reference_vector, distance=min_peak_distance_samples)
@@ -1194,29 +1386,34 @@ def compute_epoch_plv_summary(
     signal_band_hz: tuple[float, float],
     reference_frequency_hz: float,
     time_window_s: tuple[float, float] | None = None,
+    filter_kwargs: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compute one scalar PLV summary from matched epochs using one phase sample per reference cycle.
 
     If time_window_s is provided, restrict computation to [start_s, end_s] relative to epoch start.
     """
-    # Crop to time window if specified
-    if time_window_s is not None:
-        start_sample = int(np.round(time_window_s[0] * sampling_rate_hz))
-        end_sample = int(np.round(time_window_s[1] * sampling_rate_hz))
-        signal_epochs = signal_epochs[:, start_sample:end_sample]
-        reference_epochs = reference_epochs[:, start_sample:end_sample]
-
     band_metrics = compute_band_limited_epoch_triplet_metrics(
         signal_epochs,
         reference_epochs,
         sampling_rate_hz,
         signal_band_hz,
+        filter_kwargs=filter_kwargs,
     )
+
+    signal_band_epochs = band_metrics["signal_band_epochs"]
+    reference_band_epochs = band_metrics["reference_band_epochs"]
+    if time_window_s is not None:
+        start_sample = int(np.round(time_window_s[0] * sampling_rate_hz))
+        end_sample = int(np.round(time_window_s[1] * sampling_rate_hz))
+        if start_sample < 0 or end_sample > signal_band_epochs.shape[-1] or end_sample <= start_sample:
+            raise ValueError("time_window_s falls outside the epoch array or is empty.")
+        signal_band_epochs = signal_band_epochs[:, start_sample:end_sample]
+        reference_band_epochs = reference_band_epochs[:, start_sample:end_sample]
 
     phase_samples = []
     for signal_epoch, reference_epoch in zip(
-        band_metrics["signal_band_epochs"],
-        band_metrics["reference_band_epochs"],
+        signal_band_epochs,
+        reference_band_epochs,
         strict=True,
     ):
         phase_samples.append(
@@ -1225,16 +1422,18 @@ def compute_epoch_plv_summary(
                 target_signal=signal_epoch,
                 sampling_rate_hz=sampling_rate_hz,
                 reference_frequency_hz=reference_frequency_hz,
-                signal_band_hz=signal_band_hz,
+                signal_band_hz=None,
             )
         )
     sampled_phase_differences = np.concatenate(phase_samples)
     plv_value = float(np.abs(np.mean(np.exp(1j * sampled_phase_differences))))
+    phase_diff = np.angle(hilbert(signal_band_epochs, axis=-1)) - np.angle(hilbert(reference_band_epochs, axis=-1))
+    itpc_curve = np.abs(np.mean(np.exp(1j * phase_diff), axis=0))
     return {
         "plv": plv_value,
         "p_value": approximate_rayleigh_p(sampled_phase_differences),
         "phase_samples": sampled_phase_differences,
-        "mean_gt_locking": float(np.mean(band_metrics["itpc_curve"])),
+        "mean_gt_locking": float(np.mean(itpc_curve)),
     }
 
 
@@ -1835,6 +2034,7 @@ def compute_itpc_timecourse(
     sampling_rate_hz: float,
     band_hz: tuple[float, float],
     time_window_s: tuple[float, float] | None = None,
+    filter_kwargs: dict[str, Any] | None = None,
 ) -> np.ndarray:
     """Compute ITPC (Inter-Trial Phase Clustering) timecourse: phase coherence per sample.
 
@@ -1852,8 +2052,9 @@ def compute_itpc_timecourse(
         raise ValueError("Need at least one matched epoch to compute ITPC.")
 
     # Band-pass filter to target band (before cropping, to maintain filter stability)
-    signal_band = filter_signal(signal_array[:n_epochs], sampling_rate_hz, band_hz[0], band_hz[1])
-    reference_band = filter_signal(reference_array[:n_epochs], sampling_rate_hz, band_hz[0], band_hz[1])
+    filter_options = {} if filter_kwargs is None else dict(filter_kwargs)
+    signal_band = filter_signal(signal_array[:n_epochs], sampling_rate_hz, band_hz[0], band_hz[1], **filter_options)
+    reference_band = filter_signal(reference_array[:n_epochs], sampling_rate_hz, band_hz[0], band_hz[1], **filter_options)
 
     # Crop to time window if specified
     if time_window_s is not None:

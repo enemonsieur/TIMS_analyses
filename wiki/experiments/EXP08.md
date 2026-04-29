@@ -31,9 +31,12 @@ Can a single-pulse dose-response protocol (10–100% intensity, 20 pulses per le
 - Epoch files: `exp08_epochs_*pct_on-epo.fif`, `exp08_gt_epochs_*pct_on-epo.fif`, `exp08_stim_epochs_*pct_on-epo.fif` (30 files total, 10 intensity levels).
 
 **Pulse Artifact Removal (2026-04-28):**
-- [`explore_exp08_pulse_artifact_removal.py`](../../explore_exp08_pulse_artifact_removal.py): per-epoch per-channel threshold detection + linear interpolation. SKRIPT.md compliant.
-- `exp08t_epochs_{10,50,100}pct_on_artremoved-epo.fif`: cleaned epochs ready for filtering and downstream analysis (PRIMARY source for all new work).
+- **Correction:** Single-pulse cleanup must use raw run01 (`exp08-STIM-pulse_run01_10-100.vhdr`) and write `exp08_epochs_{10..100}pct_on_artremoved-epo.fif`. Do not use `exp08t_*_artremoved` for the single-pulse question; those files belong to triplet run02 and were generated with the wrong event unit.
+- [`explore_exp08_pulse_artifact_removal.py`](../../explore_exp08_pulse_artifact_removal.py): raw run01 pulse-level per-channel threshold detection + linear interpolation.
+- `exp08_epochs_{10..100}pct_on_artremoved-epo.fif`: cleaned run01 single-pulse epochs ready for filtering and downstream analysis (PRIMARY source for single-pulse work).
 - [`exp08_pulse_artremoved_qc.png`](../../EXP08/exp08_pulse_artremoved_qc.png): QC heatmaps showing artifact recovery duration per channel/epoch, plus before/after Oz overlays at 100% intensity.
+- [`exp08_artremoved_dataviz.png`](../../EXP08/exp08_artremoved_dataviz.png): all-intensity Oz before/after overview, explicitly sourced from run01.
+- [`exp08_run01_pulse_artifact_summary.txt`](../../EXP08/exp08_run01_pulse_artifact_summary.txt): run01 pulse schedule, thresholds, and artifact-duration table.
 
 **Analysis & Findings:**
 - [`explore_exp08_timecourse_100pct.py`](../../explore_exp08_timecourse_100pct.py): 5-channel timecourse + ITPC + stimulus visualization at 100% intensity.
@@ -110,18 +113,36 @@ After decay removal, applied `.apply_baseline((-0.8, -0.3))` to demean each epoc
 
 **PREREQUISITE**: All downstream analyses (ITPC, SNR, TEP, PLV, etc.) must use **artremoved epochs**, not raw epochs.
 
-Pulse artifact removal completed via per-epoch per-channel threshold detection + linear interpolation:
+**Run01 correction:** The valid single-pulse output family is `exp08_epochs_{10..100}pct_on_artremoved-epo.fif`, regenerated from raw `exp08-STIM-pulse_run01_10-100.vhdr`. The previous `exp08t_*_artremoved` files are triplet-run02 products and are invalid for the single-pulse EXP08 conclusion.
+
+Pulse artifact removal completed from raw run01 via pulse-level per-channel threshold detection + linear interpolation:
 - `explore_exp08_pulse_artifact_removal.py` — Validated 2026-04-28
-- Output files: `exp08t_epochs_{10,50,100}pct_on_artremoved-epo.fif`
+- Output files: `exp08_epochs_{10..100}pct_on_artremoved-epo.fif`
 - QC plot: `exp08_pulse_artremoved_qc.png` (artifact end times per channel/epoch, before/after overlays)
+- Dataviz plot: `exp08_artremoved_dataviz.png` (all-intensity Oz before/after)
+- Summary: `exp08_run01_pulse_artifact_summary.txt`
 - Method details: wiki/methods/TEP_Preprocessing.md § "Pulse Artifact Removal"
 
 **Key results**:
-- 10% intensity: mean artifact duration 150 ms (8–200 ms range)
-- 50% intensity: mean 133 ms (1–200 ms, many hit hard cap)
-- 100% intensity: mean 72 ms (1–200 ms, faster decay but noisier detection)
+- Run01 single-pulse timing: 200 pulses total, 20 pulses per intensity, 5.0 s spacing.
+- Artifact-duration summaries are regenerated in `exp08_run01_pulse_artifact_summary.txt` with all 10 intensities; current acute removal is -10 to +20 ms for nearly all channels.
+- 100% Oz acute-window validation: raw abs max 93,340.8 uV -> cleaned abs max 6,781.2 uV.
+- Current artifact end table:
 
-**Why per-epoch per-channel?** At 100%, baseline is bimodal (±315 µV) and within-epoch decay reaches −3000 µV. Global batch cropping fails; must adapt to each trial's unique artifact signature.
+| Intensity | Mean end ms | Std | Min | Max | Mean threshold uV |
+|-----------|------------:|----:|----:|----:|------------------:|
+| 10% | 20.0 | 0.0 | 20 | 20 | 10.8 |
+| 20% | 20.0 | 0.4 | 20 | 29 | 32.0 |
+| 30% | 20.0 | 0.0 | 20 | 20 | 83.0 |
+| 40% | 20.0 | 0.0 | 20 | 20 | 157.3 |
+| 50% | 20.0 | 0.0 | 20 | 20 | 320.9 |
+| 60% | 20.0 | 0.0 | 20 | 20 | 519.5 |
+| 70% | 20.0 | 0.0 | 20 | 20 | 712.9 |
+| 80% | 20.0 | 0.0 | 20 | 20 | 875.9 |
+| 90% | 20.0 | 0.0 | 20 | 20 | 1005.9 |
+| 100% | 20.0 | 0.0 | 20 | 20 | 1132.1 |
+
+**Why pulse-level per-channel?** At 100%, baseline is bimodal (±315 µV) and residual offsets vary by channel and pulse. Global batch cropping fails; the run01 cleanup adapts to each pulse/channel before rebuilding the single-pulse epochs.
 
 ## Next Steps
 

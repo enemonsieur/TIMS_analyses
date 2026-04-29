@@ -92,27 +92,20 @@ print(f"Expected total pulses: {len(INTENSITY_LEVELS)} levels × {PULSES_PER_INT
 # 2) DETECT PULSE BLOCKS & ORGANIZE BY INTENSITY
 # ============================================================
 
-# ══ 2.1 Detect pulse onsets from stim trace ══
-# EXP08 uses short pulses (~15 ms), so detect peaks directly instead of long blocks.
-# Threshold: envelope of stim exceeds max(stim) * threshold_fraction.
-from scipy.signal import hilbert
-envelope = np.abs(hilbert(stim_trace))
-threshold = np.max(envelope) * STIM_THRESHOLD_FRACTION
-# Find peaks: rising edges where envelope crosses threshold
-peaks = np.where(np.diff(envelope > threshold).astype(int) == 1)[0]
-
-if len(peaks) < len(INTENSITY_LEVELS) * PULSES_PER_INTENSITY:
-    raise RuntimeError(
-        f"Need at least {len(INTENSITY_LEVELS) * PULSES_PER_INTENSITY} pulses, but found {len(peaks)}."
-    )
-
-# Use peaks as pulse onsets; offsets are next pulse onset (5 s later, not 15 ms)
-# For single pulses, the "offset" is the start of the next pulse, so we have full 5 s window
-block_onsets_samples = peaks[:len(INTENSITY_LEVELS) * PULSES_PER_INTENSITY]
+# ══ 2.1 Deterministic pulse onset calculation ══
+# Experiment control: fixed 5 s inter-pulse interval at 1000 Hz.
+# User-confirmed first pulse peak: sample 20530 (read from diagnostic plot).
+# All 200 onsets: first + k × IPI, k=0..199. Zero jitter by construction.
+FIRST_PULSE_SAMPLE = 20530
 inter_pulse_samples = int(round(INTER_PULSE_INTERVAL_S * sfreq))
+n_pulses = len(INTENSITY_LEVELS) * PULSES_PER_INTENSITY
+
+block_onsets_samples = FIRST_PULSE_SAMPLE + np.arange(n_pulses) * inter_pulse_samples
 block_offsets_samples = block_onsets_samples + inter_pulse_samples
 
-print(f"Detected: {len(block_onsets_samples)} pulses")
+print(f"Deterministic onsets: first={block_onsets_samples[0]}, "
+      f"last={block_onsets_samples[-1]}, IPI={inter_pulse_samples} samples, "
+      f"n_pulses={n_pulses}")
 
 # ════════════════════════════════════════════════════════════════════════════
 # 3) PULSE ALIGNMENT QC
