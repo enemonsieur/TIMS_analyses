@@ -11,6 +11,8 @@ tags:
 
 ## Status Update (2026-04-28)
 
+**Dual-coil Cz SimNIBS plot update (2026-04-29):** [[simulation/SIM_dual_coil_cz|SIM Dual-Coil Cz]] now documents the thresholded whole-GM map and the revised left-medial +X camera view. The 30 mm ROI result remains **19.486 V/m** weighted mean `magET`; the plot update changes interpretation/visibility, not the extracted scalar result.
+
 **EXP08 run01 artifact removal corrected (2026-04-28):** `exp08_epochs_{10..100}pct_on_artremoved-epo.fif` regenerated from raw `exp08-STIM-pulse_run01_10-100.vhdr` via pulse-level per-channel threshold detection + linear interpolation. Previous `exp08t_*_artremoved` files (triplet run02, wrong event unit) are invalid for single-pulse work. Oz 100% acute-window: raw 93,340.8 µV → cleaned 6,781.2 µV. **All downstream ITPC/SNR/TEP analyses must use artremoved epochs.** See [[experiments/EXP08|EXP08 §Artifact Removal Pipeline]] and [[methods/TEP_Preprocessing|TEP Preprocessing §Pulse Artifact Removal]].
 
 **EXP08 filter DRIL added (2026-04-28):** [[methods/Filter_Impulse_Response|Filter impulse response]] shows `filtfilt` is not acceptable for pulse-adjacent interpretation because it mirrors artifact ringing backward into the pre-pulse period. Causal 10-16 Hz is more interpretable, but still rings forward after the pulse.
@@ -60,7 +62,7 @@ tags:
 
 ## Simulations
 
-- [[simulation/SIM_dual_coil_cz|SIM Dual-Coil Cz]]: SimNIBS combined E-field for dual-coil ±40 mm setup centered on Cz. ROI weighted mean magET at 30 mm depth: **19.486 V/m** (5 mm GM sphere). Whole-GM map, lateral hemisphere view, and distance-decay profile generated.
+- [[simulation/SIM_dual_coil_cz|SIM Dual-Coil Cz]]: SimNIBS combined E-field for dual-coil +/-40 mm setup centered on Cz. ROI weighted mean magET at 30 mm depth: **19.486 V/m** (5 mm GM sphere). Whole-GM threshold map, left-medial +X camera view, and distance-decay profile generated.
 
 ## Methods
 

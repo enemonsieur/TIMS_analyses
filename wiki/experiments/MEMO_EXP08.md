@@ -59,19 +59,16 @@ Multi-intensity ITPC sweep (10%–100%) with 0% pre-pulse baseline reveals **sti
 
 ## 3. Data & Outputs
 
-**Raw epoch files (reference timing only):**
-- `exp08_epochs_{10..100}pct_on-epo.fif` (20 epochs × 28 channels per intensity)
-- `exp08_gt_epochs_{10..100}pct_on-epo.fif` (20 epochs × 1 GT channel per intensity)
-- `exp08_stim_epochs_{10..100}pct_on-epo.fif` (20 epochs × 1 stim trace per intensity)
-
-**Artifact-removed epoch files (PRIMARY — use for all downstream analysis):**
-- `exp08_epochs_{10..100}pct_on_artremoved-epo.fif` (20 epochs × 28 channels per intensity)
+**Unified epoch files (PRIMARY — use for all downstream analysis):**
+All 4 files cover all 200 pulses (event_id 1–10 per intensity 10–100%), GT+STIM channels embedded.
+- `exp08_all_on_artremoved-epo.fif` (1 Hz HP cleaned, −1 to +2 s)
+- `exp08_all_on_signal-epo.fif` (12–14 Hz, −1 to +2 s)
+- `exp08_all_on_noise-epo.fif` (4–20 Hz, −1 to +2 s)
+- `exp08_all_lateoff_noise-epo.fif` (4–20 Hz, +2 to +4 s lateOFF)
 - Source: raw `exp08-STIM-pulse_run01_10-100.vhdr` only; do NOT use `exp08t_*` (triplet run02, wrong event unit)
-- Method: pulse-level per-channel threshold detection + linear interpolation (−10 ms to detected recovery)
-- QC: `exp08_pulse_artremoved_qc.png` (artifact duration heatmaps + before/after Oz overlays at 100%)
-- Summary: `exp08_run01_pulse_artifact_summary.txt` (artifact end times per intensity)
-- Dataviz: `exp08_artremoved_dataviz.png` (channel overview of cleaned epochs)
-- Code: `explore_exp08_pulse_artifact_removal.py` (validated 2026-04-28); helpers in `preprocessing.py` and `plot_helpers.py`
+- Method: dual-threshold find_peaks (max(5×SD, 2%×spike)) per-channel per-pulse, −25 ms to last detected peak, linear interpolation
+- QC: `exp08_pulse_artremoved_qc.png`; Summary: `exp08_run01_pulse_artifact_summary.txt`
+- Code: `exp08_preprocessing.py` (restructured 2026-05-02)
 
 **Run01 correction (2026-04-28):** Previous `exp08t_*_artremoved` files were generated from triplet run02 with the wrong event unit and are invalid for the single-pulse question. All artremoved epoch files were regenerated from run01. Key validation: Oz 100% acute window raw abs max 93340.8 µV → cleaned abs max 6781.2 µV.
 

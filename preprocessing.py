@@ -17,6 +17,7 @@ from typing import Any
 import mne
 from mne.time_frequency import tfr_array_morlet
 import numpy as np
+from scipy import linalg
 from scipy.signal import butter, coherence, filtfilt, find_peaks, hilbert, iirnotch, sosfilt, welch
 from scipy.optimize import curve_fit
 
@@ -296,6 +297,66 @@ def interpolate_pulse_artifacts_by_threshold(
             thresholds_uv[pulse_index, channel_index] = threshold_v * 1e6
 
     return clean_data_v, durations_ms, thresholds_uv
+
+
+def remove_pulse_artifacts(
+    eeg_data: np.ndarray,
+    pulse_samples: np.ndarray,
+    sfreq: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Remove TMS pulse artifacts using find_peaks oscillation detection + linear interpolation.
+
+    For each pulse × channel:
+      1. Estimate baseline mean and noise from the −100 to −10 ms pre-pulse window.
+      2. Compute unsigned deviation from baseline: |signal − baseline_mean|.
+      3. Set threshold = max(5× baseline SD, 2% × first-20ms peak amplitude).
+      4. Find the LAST oscillation peak above threshold in the 20–200 ms search window.
+      5. Replace −25 ms → last peak with a straight line anchored at both signal endpoints.
+
+    All algorithm parameters (windows, multipliers) are hardcoded; only pulse positions and
+    sampling rate are arguments.
+
+    Args:
+        eeg_data: (n_channels, n_samples) continuous EEG in Volts
+        pulse_samples: (n_pulses,) sample indices of pulse onsets
+        sfreq: sampling rate in Hz
+    Returns:
+        cleaned: (n_channels, n_samples) Volts with artifact windows replaced
+        durations_ms: (n_pulses, n_channels) artifact end time in ms per pulse × channel
+    """
+    def ms(x: float) -> int:
+        return int(round(x / 1000.0 * sfreq))
+
+    cleaned = np.array(eeg_data, dtype=float, copy=True)
+    pulses = np.asarray(pulse_samples, dtype=int).ravel()
+    n_channels = cleaned.shape[0]
+    durations_ms = np.zeros((pulses.size, n_channels), dtype=float)
+
+    for p_idx, pulse in enumerate(pulses):
+        # Baseline: pre-pulse mean and noise floor (−100 to −10 ms)
+        bl = cleaned[:, pulse + ms(-100) : pulse + ms(-10)]
+        bl_mean = bl.mean(axis=1)                                    # (n_ch,)
+        bl_std  = bl.std(axis=1)                                     # (n_ch,) noise floor
+
+        dev = np.abs(cleaned - bl_mean[:, None])                     # (n_ch, n_samples)
+        peak_ampl = dev[:, pulse : pulse + ms(20)].max(axis=1)       # (n_ch,) first-20ms peak
+        threshold = np.maximum(5.0 * bl_std, 0.02 * peak_ampl)      # (n_ch,)
+
+        # Find the last artifact oscillation peak in the 20–200 ms search window
+        search = dev[:, pulse + ms(20) : pulse + ms(200)]            # (n_ch, ~180 samples)
+        art_start = pulse + ms(-25)
+
+        for ch in range(n_channels):
+            peaks, _ = find_peaks(search[ch], height=threshold[ch])
+            art_end = pulse + ms(20) + peaks[-1] if len(peaks) else pulse + ms(20)
+            idx = np.arange(art_start, art_end)
+            if idx.size > 0:
+                cleaned[ch, idx] = np.linspace(
+                    cleaned[ch, art_start], cleaned[ch, art_end], idx.size, endpoint=False
+                )
+            durations_ms[p_idx, ch] = (art_end - pulse) * 1000.0 / sfreq  # ms from pulse center
+
+    return cleaned, durations_ms
 
 
 def load_exp06_saved_ssd_artifact(weights_path: Path) -> dict[str, Any]:
@@ -1435,6 +1496,230 @@ def compute_epoch_plv_summary(
         "phase_samples": sampled_phase_differences,
         "mean_gt_locking": float(np.mean(itpc_curve)),
     }
+
+
+def flatten_multichannel_epochs(epoch_data: np.ndarray) -> np.ndarray:
+    """Return multichannel epochs as (n_channels, n_epochs * n_samples)."""
+    epoch_array = np.asarray(epoch_data, dtype=float)
+    if epoch_array.ndim != 3:
+        raise ValueError("epoch_data must have shape (n_epochs, n_channels, n_samples).")
+    return epoch_array.transpose(1, 0, 2).reshape(epoch_array.shape[1], -1)
+
+
+def baseline_centered_window_rms_uv(
+    epochs: Any,
+    baseline_window_s: tuple[float, float],
+    check_window_s: tuple[float, float],
+) -> float:
+    """Compute RMS in microvolts after subtracting each epoch/channel baseline mean."""
+    data_uv = epochs.get_data() * 1e6
+    baseline_mask = (epochs.times >= baseline_window_s[0]) & (epochs.times <= baseline_window_s[1])
+    check_mask = (epochs.times >= check_window_s[0]) & (epochs.times <= check_window_s[1])
+    centered = data_uv - data_uv[:, :, baseline_mask].mean(axis=2, keepdims=True)
+    return float(np.sqrt(np.mean(centered[:, :, check_mask] ** 2)))
+
+
+def sass_demixing(on_flat: np.ndarray, rest_flat: np.ndarray) -> np.ndarray:
+    """SASS spatial filter: generalized eig of cov(ON) vs cov(REST).
+
+    Inputs are already band-pass filtered and flattened to (n_channels, n_samples).
+    Returns demixing rows in eigenvalue-descending order so component 0 is the
+    strongest ON-vs-REST direction (artifact); the script picks index 1+ to skip it.
+    """
+    eig_vals, eig_vecs = linalg.eig(np.cov(on_flat), np.cov(rest_flat))
+    return eig_vecs[:, np.argsort(eig_vals.real)[::-1]].real.T
+
+
+def ssd_demixing(on_signal_flat: np.ndarray, on_view_flat: np.ndarray) -> np.ndarray:
+    """SSD spatial filter: generalized eig of cov(signal-band) vs cov(view-band).
+
+    Both inputs are filtered + flattened views of the same ON data.
+    Returns demixing rows in eigenvalue-descending order so component 0 is the
+    canonical SSD output (best signal-band-to-view-band power ratio).
+    """
+    eig_vals, eig_vecs = linalg.eigh(np.cov(on_signal_flat), np.cov(on_view_flat))
+    return eig_vecs[:, np.argsort(eig_vals)[::-1]].T
+
+
+def make_sass_component_candidates(
+    on_epochs: np.ndarray,
+    rest_epochs: np.ndarray,
+    sampling_rate_hz: float,
+    view_band_hz: tuple[float, float],
+    n_components: int,
+    skip_components: int = 1,
+    filter_order: int = 4,
+) -> tuple[list[dict[str, Any]], int]:
+    """Build SASS component activations from ON-vs-rest covariance.
+
+    Components are returned in generalized-eigenvalue order. The caller should
+    score retained components against the scientific reference of interest.
+    """
+    import sass as sass_module
+
+    on_array = np.asarray(on_epochs, dtype=float)
+    rest_array = np.asarray(rest_epochs, dtype=float)
+    on_view = filter_signal(
+        on_array,
+        sampling_rate_hz,
+        view_band_hz[0],
+        view_band_hz[1],
+        notch_hz=None,
+        order=filter_order,
+    )
+    rest_view = filter_signal(
+        rest_array,
+        sampling_rate_hz,
+        view_band_hz[0],
+        view_band_hz[1],
+        notch_hz=None,
+        order=filter_order,
+    )
+    on_flat = flatten_multichannel_epochs(on_view)
+    rest_flat = flatten_multichannel_epochs(rest_view)
+    on_cov = np.cov(on_flat)
+    rest_cov = np.cov(rest_flat)
+
+    eigen_values, eigen_vectors = linalg.eig(on_cov, rest_cov)
+    order = np.argsort(eigen_values.real)[::-1]
+    lambdas = eigen_values.real[order]
+    demixing = eigen_vectors[:, order].real.T
+    mixing = linalg.pinv(demixing)
+    auto_null_count = int(sass_module.find_n_nulls(on_cov, rest_cov, demixing, mixing))
+
+    first_component = max(skip_components, auto_null_count)
+    last_component = min(first_component + n_components, on_array.shape[1])
+    candidates = []
+    for component_index in range(first_component, last_component):
+        component_signal = demixing[component_index].dot(on_flat).reshape(
+            on_array.shape[0], on_array.shape[2]
+        )
+        candidates.append(
+            {
+                "kind": "sass_component",
+                "index": component_index,
+                "label": f"SASS C{component_index + 1}",
+                "lambda": float(lambdas[component_index]),
+                "signal": component_signal,
+            }
+        )
+    return candidates, auto_null_count
+
+
+def make_ssd_component_candidates(
+    on_epochs: np.ndarray,
+    sampling_rate_hz: float,
+    signal_band_hz: tuple[float, float],
+    view_band_hz: tuple[float, float],
+    n_components: int,
+    filter_order: int = 4,
+) -> list[dict[str, Any]]:
+    """Build SSD component activations from signal-band vs view-band covariance."""
+    on_array = np.asarray(on_epochs, dtype=float)
+    on_flat = flatten_multichannel_epochs(on_array)
+    signal_flat = filter_signal(
+        on_flat,
+        sampling_rate_hz,
+        signal_band_hz[0],
+        signal_band_hz[1],
+        notch_hz=None,
+        order=filter_order,
+    )
+    view_flat = filter_signal(
+        on_flat,
+        sampling_rate_hz,
+        view_band_hz[0],
+        view_band_hz[1],
+        notch_hz=None,
+        order=filter_order,
+    )
+    signal_cov = np.cov(signal_flat)
+    view_cov = np.cov(view_flat)
+    eigen_values, eigen_vectors = linalg.eigh(signal_cov, view_cov)
+    order = np.argsort(eigen_values)[::-1]
+    demixing = eigen_vectors[:, order].T[:n_components]
+
+    candidates = []
+    for component_index, weights in enumerate(demixing):
+        component_signal = weights.dot(on_flat).reshape(on_array.shape[0], on_array.shape[2])
+        candidates.append(
+            {
+                "kind": "ssd_component",
+                "index": component_index,
+                "label": f"SSD C{component_index + 1}",
+                "lambda": float(eigen_values[order][component_index]),
+                "signal": component_signal,
+            }
+        )
+    return candidates
+
+
+def score_signal_against_reference(
+    signal_epochs: np.ndarray,
+    reference_epochs: np.ndarray,
+    sampling_rate_hz: float,
+    signal_band_hz: tuple[float, float],
+    view_band_hz: tuple[float, float],
+    reference_frequency_hz: float,
+    phase_window_from_epoch_start_s: tuple[float, float],
+    time_mask_samples: np.ndarray,
+    filter_kwargs: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Compute PLV, reference-locked ITPC, phase samples, and SNR for one signal."""
+    plv_summary = compute_epoch_plv_summary(
+        signal_epochs,
+        reference_epochs,
+        sampling_rate_hz,
+        signal_band_hz,
+        reference_frequency_hz,
+        time_window_s=phase_window_from_epoch_start_s,
+        filter_kwargs=filter_kwargs,
+    )
+    itpc_curve = compute_itpc_timecourse(
+        signal_epochs,
+        reference_epochs,
+        sampling_rate_hz,
+        signal_band_hz,
+        filter_kwargs=filter_kwargs,
+    )[time_mask_samples]
+    return {
+        "plv": float(plv_summary["plv"]),
+        "p_value": float(plv_summary["p_value"]),
+        "phase_samples": np.asarray(plv_summary["phase_samples"]),
+        "mean_gt_locking": float(plv_summary["mean_gt_locking"]),
+        "mean_itpc": float(np.mean(itpc_curve)),
+        "itpc_curve": itpc_curve,
+        "snr": compute_snr_linear(signal_epochs, sampling_rate_hz, signal_band_hz, view_band_hz),
+    }
+
+
+def select_best_component_by_plv(
+    candidates: list[dict[str, Any]],
+    reference_epochs: np.ndarray,
+    sampling_rate_hz: float,
+    signal_band_hz: tuple[float, float],
+    view_band_hz: tuple[float, float],
+    reference_frequency_hz: float,
+    phase_window_from_epoch_start_s: tuple[float, float],
+    time_mask_samples: np.ndarray,
+    filter_kwargs: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Score candidate components and return the one with maximum PLV."""
+    scored_candidates = []
+    for candidate in candidates:
+        metrics = score_signal_against_reference(
+            np.asarray(candidate["signal"]),
+            reference_epochs,
+            sampling_rate_hz,
+            signal_band_hz,
+            view_band_hz,
+            reference_frequency_hz,
+            phase_window_from_epoch_start_s,
+            time_mask_samples,
+            filter_kwargs=filter_kwargs,
+        )
+        scored_candidates.append({**candidate, **metrics})
+    return max(scored_candidates, key=lambda item: float(item["plv"]))
 
 
 def select_top_channels_against_reference(

@@ -105,19 +105,20 @@ evoked_post = epochs_post.average()
 
 **CRITICAL**: Filtering during the pulse artifact window is invalid because the bandpass filter rings for 2+ s post-pulse, spreading the artifact across the entire analysis window and corrupting ITPC/PLV metrics. Single-pulse TMS experiments require artifact removal **before any filtering**.
 
-**EXP08 run01 correction (2026-04-28):** The valid single-pulse artifact-removal source is raw `exp08-STIM-pulse_run01_10-100.vhdr`, and the cleaned EEG outputs are `exp08_epochs_{10..100}pct_on_artremoved-epo.fif`. Do not use `exp08t_*_artremoved` for single-pulse work; those files belong to triplet run02 and used the wrong event unit for this question.
+**EXP08 run01 correction (2026-05-02):** The valid single-pulse artifact-removal source is raw `exp08-STIM-pulse_run01_10-100.vhdr`. Outputs are 4 unified epoch files with GT+STIM embedded: `exp08_all_on_artremoved-epo.fif`, `exp08_all_on_signal-epo.fif`, `exp08_all_on_noise-epo.fif`, `exp08_all_lateoff_noise-epo.fif`. Do not use `exp08t_*_artremoved`; those belong to triplet run02.
 
-### Method: Continuous-Raw Pulse-Level Threshold Detection + Linear Interpolation
+### Method: Dual-Threshold find_peaks + Linear Interpolation
 
 For each scheduled run01 pulse and EEG channel:
 
-1. **Build run01 pulse schedule**: 200 pulse centers from sample 20530 at 5.0 s spacing (10 intensities x 20 pulses).
-2. **Fit local pre-pulse drift** in continuous Volts data from -100 to -10 ms.
-3. **Start interpolation at -10 ms** because the run01 EEG impulse peak is 3 ms before the scheduled pulse sample.
-4. **Detect recovery** from +20 to +200 ms using `max(5 x baseline residual std, 2% x pulse peak deviation)`.
-5. **Debounce recovery**: require 20 ms of sustained below-threshold signal.
-6. **Interpolate**: replace the artifact interval with the local linear drift continuation.
-7. **Epoch cleaned raw** into the existing ON windows; STIM/GT reference epoch files remain raw timing references.
+1. **Build run01 pulse schedule**: 200 pulse centers from sample 20530 at 5.0 s spacing (10 intensities × 20 pulses).
+2. **Compute pre-pulse baseline statistics** (−100 to −10 ms): mean and std per channel.
+3. **Measure first-20ms spike** (0 to +20 ms): max absolute amplitude relative to baseline mean.
+4. **Compute dual threshold** per channel: `max(5 × baseline_SD, 2% × first-20ms_peak)`.
+5. **Detect artifact recovery** from +20 to +200 ms using `scipy.signal.find_peaks(height=threshold)`; record last detected peak above threshold.
+6. **Interpolate artifact**: replace −25 ms → last_peak with linear interpolation between start and end values (continues baseline trend).
+7. **Filter three copies** of cleaned raw: 1 Hz HP (artremoved), 12–14 Hz (signal), 4–20 Hz (noise/lateOFF).
+8. **Epoch into 4 unified FIF files** with GT+STIM embedded, event_id 1–10 per intensity.
 
 ### Results (EXP08 run01, 20 pulses x 28 channels per intensity)
 
@@ -140,7 +141,10 @@ All 10 single-pulse intensities were regenerated from raw run01. Current summari
 
 ### Outputs
 
-- `exp08_epochs_{10..100}pct_on_artremoved-epo.fif` — cleaned run01 single-pulse epochs ready for filtering
+- `exp08_all_on_artremoved-epo.fif` — 1 Hz HP cleaned, all 200 pulses, GT+STIM embedded
+- `exp08_all_on_signal-epo.fif` — 12–14 Hz filtered, all 200 pulses
+- `exp08_all_on_noise-epo.fif` — 4–20 Hz filtered, all 200 pulses
+- `exp08_all_lateoff_noise-epo.fif` — 4–20 Hz filtered, +2 to +4 s lateOFF
 - `exp08_pulse_artremoved_qc.png` — QC heatmaps (artifact duration per channel/epoch) + before/after overlays
 - `exp08_artremoved_dataviz.png` — all-intensity Oz before/after overview
 - `exp08_run01_pulse_artifact_summary.txt` — source/config/statistics summary
@@ -149,28 +153,35 @@ All 10 single-pulse intensities were regenerated from raw run01. Current summari
 
 At 100% intensity, baseline state and residual offsets vary strongly by channel and pulse. Global cropping fails because the "before" and "after" anchor points are not shared across channels. Pulse-level per-channel interpolation adapts to each artifact signature before the triplet-independent run01 epochs are rebuilt.
 
-### Implementation
+### Implementation (inline in exp08_preprocessing.py)
 
 ```python
-clean_data_v, durations_ms, thresholds_uv = preprocessing.interpolate_pulse_artifacts_by_threshold(
-    raw_eeg.get_data(),
-    pulse_samples,
-    sampling_rate_hz,
-    baseline_window_ms=(-100, -10),
-    artifact_start_ms=-10,
-    min_artifact_end_ms=20,
-    max_artifact_end_ms=200,
-    peak_window_ms=(0, 20),
-    threshold_sd_multiplier=5.0,
-    peak_fraction=0.02,
-    debounce_ms=20,
-)
+def ms(x): return int(round(x / 1000.0 * sfreq))
+
+clean_data = raw.get_data().copy()
+for p_idx, pulse in enumerate(pulse_samples.astype(int)):
+    eeg_sig = clean_data[eeg_idx, :]
+    bl = eeg_sig[:, pulse + ms(-100) : pulse + ms(-10)]  # baseline window
+    bl_mean = bl.mean(axis=1)
+    bl_std = bl.std(axis=1)
+    first20 = np.abs(eeg_sig[:, pulse : pulse + ms(20)] - bl_mean[:, None])
+    search = np.abs(eeg_sig[:, pulse + ms(20) : pulse + ms(200)] - bl_mean[:, None])
+    threshold = np.maximum(5.0 * bl_std, 0.02 * first20.max(axis=1))  # dual threshold
+    
+    art_start = pulse + ms(-25)
+    for k, ch in enumerate(eeg_idx):
+        peaks, _ = find_peaks(search[k], height=threshold[k])
+        art_end = pulse + ms(20) + peaks[-1] if len(peaks) else pulse + ms(20)
+        idx = np.arange(art_start, art_end)
+        if idx.size:
+            clean_data[ch, idx] = np.linspace(clean_data[ch, art_start], clean_data[ch, art_end], idx.size, endpoint=False)
 ```
 
 ### Known Limitations
 
-- **Acute artifact only**: This removes the pulse spike window; it does not prove post-pulse physiology or filter-ringing windows are artifact-free.
-- **Threshold parameter k=5**: Current run01 results are dominated by the minimum +20 ms end, with one 20% pulse/channel at +29 ms. Revisit only if downstream QC shows residual acute spikes.
+- **Acute artifact only**: Removes the pulse spike window (−25 ms → last detected peak); does not address post-pulse physiology or filter-ringing contamination.
+- **Dual-threshold strategy**: Both components are active (5×SD and 2%×spike); neither is redundant. However, at low intensities (<30%), the 2% component rarely triggers, and most removal is SD-based.
+- **Last-peak detection**: Uses `find_peaks` to locate the last peak above threshold in +20 to +200 ms window. If oscillation continues beyond +200 ms (rare at single-pulse), endpoint may be underestimated.
 - **No spatial modeling**: Each channel detected independently; may miss coordinated artifact patterns across electrode array.
 
 ### Validation

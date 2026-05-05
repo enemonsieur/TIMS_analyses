@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "EXP08 interactive plots",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/explore_exp08_art_filtering.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "python": "C:\\Program Files\\Python310\\python.exe",
+      "env": {
+        "QT_API": "pyqt6",
+        "MPLBACKEND": "qtagg"
+      },
+      "justMyCode": false
+    }
+  ]
+}

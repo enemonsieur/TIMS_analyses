@@ -1,0 +1,32 @@
+EXP08 art-filtering comparison
+Epoch directory: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08
+Target frequency: fixed 13.0 Hz
+Windows: ON=(-0.5, 1.0), late-OFF=(1.5, 3.2), phase=(-0.5, 0.5)
+Raw: fixed Oz; SASS: skip=max(1, auto_null_count) then rank 6 components by PLV; SSD: rank top 6 by PLV.
+
+pct | raw_PLV | SASS_comp | SASS_lambda | SASS_PLV | SASS_auto_nulls | SSD_comp | SSD_lambda | SSD_PLV | STIM_PLV
+ 10 | 0.995 | C2 | 1.33 | 0.752 | 0 | C1 | 0.436 | 0.997 | 0.148
+ 20 | 0.997 | C6 | 1.09 | 0.753 | 0 | C1 | 0.492 | 0.998 | 0.236
+ 30 | 0.993 | C4 | 1.16 | 0.670 | 0 | C1 | 0.475 | 0.998 | 0.157
+ 40 | 0.994 | C6 | 1.12 | 0.681 | 0 | C1 | 0.456 | 0.995 | 0.388
+ 50 | 0.997 | C2 | 1.26 | 0.783 | 0 | C1 | 0.485 | 0.998 | 0.150
+ 60 | 0.998 | C5 | 1.15 | 0.743 | 0 | C1 | 0.492 | 0.999 | 0.329
+ 70 | 0.996 | C5 | 1.13 | 0.856 | 0 | C1 | 0.476 | 0.998 | 0.326
+ 80 | 0.993 | C6 | 1.09 | 0.804 | 0 | C1 | 0.466 | 0.997 | 0.185
+ 90 | 0.996 | C2 | 1.28 | 0.799 | 0 | C1 | 0.511 | 0.999 | 0.158
+100 | 0.996 | C6 | 1.06 | 0.757 | 0 | C1 | 0.468 | 0.999 | 0.251
+
+Saved outputs:
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_itpc_artremoved_raw_sass_ssd_vs_gt.png
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_itpc_artremoved_summary.png
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_plv_artremoved_raw_sass_ssd_vs_gt.png
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_phase_hist_artremoved_raw_sass_ssd_vs_gt_10pct.png
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_phase_hist_artremoved_raw_sass_ssd_vs_gt_20pct.png
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_phase_hist_artremoved_raw_sass_ssd_vs_gt_30pct.png
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_phase_hist_artremoved_raw_sass_ssd_vs_gt_40pct.png
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_phase_hist_artremoved_raw_sass_ssd_vs_gt_50pct.png
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_phase_hist_artremoved_raw_sass_ssd_vs_gt_60pct.png
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_phase_hist_artremoved_raw_sass_ssd_vs_gt_70pct.png
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_phase_hist_artremoved_raw_sass_ssd_vs_gt_80pct.png
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_phase_hist_artremoved_raw_sass_ssd_vs_gt_90pct.png
+C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_phase_hist_artremoved_raw_sass_ssd_vs_gt_100pct.png

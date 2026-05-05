@@ -1,9 +1,11 @@
 """Plotting helpers for ssd_plv_comparison.py"""
+import os
 from pathlib import Path
 
 import numpy as np
 import matplotlib
-matplotlib.use("Agg")
+if "MPLBACKEND" not in os.environ:
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import mne
 from mne.time_frequency import tfr_array_morlet

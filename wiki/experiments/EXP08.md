@@ -28,12 +28,12 @@ Can a single-pulse dose-response protocol (10–100% intensity, 20 pulses per le
 - [`explore_exp08_pulses.py`](../../explore_exp08_pulses.py): pulse detection and epoch extraction, SKRIPT.md compliant.
 - [`exp08_epoch_summary.txt`](../../EXP08/exp08_epoch_summary.txt): timing summary with per-intensity epoch counts and window definitions.
 - [`exp08_block_timing_by_intensity.png`](../../EXP08/exp08_block_timing_by_intensity.png): visualization of all 200 pulses marked by intensity level.
-- Epoch files: `exp08_epochs_*pct_on-epo.fif`, `exp08_gt_epochs_*pct_on-epo.fif`, `exp08_stim_epochs_*pct_on-epo.fif` (30 files total, 10 intensity levels).
+- Epoch files: 4 unified files with GT+STIM embedded, event_id 1–10 per intensity: `exp08_all_on_artremoved-epo.fif`, `exp08_all_on_signal-epo.fif`, `exp08_all_on_noise-epo.fif`, `exp08_all_lateoff_noise-epo.fif`.
 
-**Pulse Artifact Removal (2026-04-28):**
-- **Correction:** Single-pulse cleanup must use raw run01 (`exp08-STIM-pulse_run01_10-100.vhdr`) and write `exp08_epochs_{10..100}pct_on_artremoved-epo.fif`. Do not use `exp08t_*_artremoved` for the single-pulse question; those files belong to triplet run02 and were generated with the wrong event unit.
-- [`explore_exp08_pulse_artifact_removal.py`](../../explore_exp08_pulse_artifact_removal.py): raw run01 pulse-level per-channel threshold detection + linear interpolation.
-- `exp08_epochs_{10..100}pct_on_artremoved-epo.fif`: cleaned run01 single-pulse epochs ready for filtering and downstream analysis (PRIMARY source for single-pulse work).
+**Pulse Artifact Removal + Epoch Saving (2026-05-02):**
+- **Correction:** Single-pulse cleanup must use raw run01 (`exp08-STIM-pulse_run01_10-100.vhdr`). Do not use `exp08t_*_artremoved`; those belong to triplet run02.
+- [`exp08_preprocessing.py`](../../exp08_preprocessing.py): raw run01 → dual-threshold find_peaks artifact removal → 4 pre-filtered epoch FIF files with GT+STIM embedded, event_id 1–10.
+- 4 unified output files (PRIMARY — use for all downstream analysis): `exp08_all_on_artremoved-epo.fif`, `exp08_all_on_signal-epo.fif` (12–14 Hz), `exp08_all_on_noise-epo.fif` (4–20 Hz), `exp08_all_lateoff_noise-epo.fif` (4–20 Hz, +2 to +4 s).
 - [`exp08_pulse_artremoved_qc.png`](../../EXP08/exp08_pulse_artremoved_qc.png): QC heatmaps showing artifact recovery duration per channel/epoch, plus before/after Oz overlays at 100% intensity.
 - [`exp08_artremoved_dataviz.png`](../../EXP08/exp08_artremoved_dataviz.png): all-intensity Oz before/after overview, explicitly sourced from run01.
 - [`exp08_run01_pulse_artifact_summary.txt`](../../EXP08/exp08_run01_pulse_artifact_summary.txt): run01 pulse schedule, thresholds, and artifact-duration table.
@@ -113,11 +113,11 @@ After decay removal, applied `.apply_baseline((-0.8, -0.3))` to demean each epoc
 
 **PREREQUISITE**: All downstream analyses (ITPC, SNR, TEP, PLV, etc.) must use **artremoved epochs**, not raw epochs.
 
-**Run01 correction:** The valid single-pulse output family is `exp08_epochs_{10..100}pct_on_artremoved-epo.fif`, regenerated from raw `exp08-STIM-pulse_run01_10-100.vhdr`. The previous `exp08t_*_artremoved` files are triplet-run02 products and are invalid for the single-pulse EXP08 conclusion.
+**Run01 correction:** `exp08t_*_artremoved` files are triplet-run02 products and are invalid for the single-pulse EXP08 conclusion. Use only the 4 unified files generated from raw run01.
 
-Pulse artifact removal completed from raw run01 via pulse-level per-channel threshold detection + linear interpolation:
-- `explore_exp08_pulse_artifact_removal.py` — Validated 2026-04-28
-- Output files: `exp08_epochs_{10..100}pct_on_artremoved-epo.fif`
+Pulse artifact removal completed from raw run01 via dual-threshold find_peaks + linear interpolation:
+- `exp08_preprocessing.py` — Restructured 2026-05-02 (saves 4 unified FIF files)
+- Output files: `exp08_all_on_artremoved-epo.fif`, `exp08_all_on_signal-epo.fif`, `exp08_all_on_noise-epo.fif`, `exp08_all_lateoff_noise-epo.fif`
 - QC plot: `exp08_pulse_artremoved_qc.png` (artifact end times per channel/epoch, before/after overlays)
 - Dataviz plot: `exp08_artremoved_dataviz.png` (all-intensity Oz before/after)
 - Summary: `exp08_run01_pulse_artifact_summary.txt`

@@ -1,0 +1,50 @@
+EXP08 CAUSAL FILTER SAMPLE STEP DRIL
+================================================================================
+
+Input raw file: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp08-STIM-pulse_run01_10-100.vhdr
+Channel: Oz
+Sampling rate: 1000.0 Hz
+Pulse: 100% pulse 11, sample 970530
+Filter: causal Butterworth bandpass 11.0-14.0 Hz, order 2
+Manual-vs-scipy max abs difference: 0.000000000000 uV
+
+Filter update rule per SOS section, direct-form II transposed:
+y[n] = b0*x[n] + z0
+z0_next = b1*x[n] - a1*y[n] + z1
+z1_next = b2*x[n] - a2*y[n]
+
+Selected processing checkpoints:
+
+step_index=60, time=-0.020000s
+  section 1: input=6.699560547e-03 V, z0=2.602127277e-04 V, z1=-2.731295090e-04 V, output=2.607999814e-04 V
+  section 2: input=2.607999814e-04 V, z0=-8.509199901e-04 V, z1=8.573613486e-04 V, output=-5.901200087e-04 V
+
+step_index=80, time=0.000000s
+  section 1: input=-4.924311719e-02 V, z0=-5.701801575e-04 V, z1=3.871591957e-04 V, output=-5.744965900e-04 V
+  section 2: input=-5.744965900e-04 V, z0=-7.926784546e-05 V, z1=1.319216280e-04 V, output=-6.537644354e-04 V
+
+step_index=100, time=0.020000s
+  section 1: input=6.696191406e-03 V, z0=-1.742412532e-03 V, z1=1.810556078e-03 V, output=-1.741825574e-03 V
+  section 2: input=-1.741825574e-03 V, z0=2.179694574e-03 V, z1=-2.045498215e-03 V, output=4.378689994e-04 V
+
+step_index=120, time=0.040000s
+  section 1: input=6.696875000e-03 V, z0=1.422547499e-03 V, z1=-1.265867933e-03 V, output=1.423134517e-03 V
+  section 2: input=1.423134517e-03 V, z0=2.269610432e-03 V, z1=-2.384896013e-03 V, output=3.692744949e-03 V
+
+step_index=160, time=0.080000s
+  section 1: input=6.698046875e-03 V, z0=-7.706547780e-04 V, z1=6.783089386e-04 V, output=-7.700676570e-04 V
+  section 2: input=-7.700676570e-04 V, z0=-4.380899275e-03 V, z1=4.510727975e-03 V, output=-5.150966932e-03 V
+
+step_index=240, time=0.160000s
+  section 1: input=6.701220703e-03 V, z0=-4.831382899e-04 V, z1=4.611533107e-04 V, output=-4.825508908e-04 V
+  section 2: input=-4.825508908e-04 V, z0=-4.655816470e-03 V, z1=4.744316965e-03 V, output=-5.138367360e-03 V
+
+step_index=400, time=0.320000s
+  section 1: input=6.701074219e-03 V, z0=1.292439726e-04 V, z1=-1.121266969e-04 V, output=1.298313589e-04 V
+  section 2: input=1.298313589e-04 V, z0=-1.901053872e-03 V, z1=1.894504339e-03 V, output=-1.771222513e-03 V
+
+step_index=720, time=0.640000s
+  section 1: input=6.693945312e-03 V, z0=3.507244872e-04 V, z1=-3.448294920e-04 V, output=3.513112487e-04 V
+  section 2: input=3.513112487e-04 V, z0=-1.144593444e-04 V, z1=1.129515857e-04 V, output=2.368519043e-04 V
+
+Figure: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_causal_filter_sample_step_dril_oz_100pct_pulse11.png

@@ -1,0 +1,31 @@
+EXP08 EPOCH 80 HZ LOW-PASS STEP DRIL
+================================================================================
+
+Input epochs: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_epochs_100pct_on_artremoved-epo.fif
+Representation: saved artremoved MNE epochs; Oz channel; per-epoch demeaned
+Channel: Oz
+Sampling rate: 1000.0 Hz
+Worst epoch index: 11
+Filter: causal Butterworth low-pass 80.0 Hz, order 4
+SOS sections: 2
+Manual section-vs-sosfilt max abs difference: 0.000000000 uV
+
+Executed first-section equation:
+y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
+sample_index=1001, time=0.001000s
+b0*x[n]: 0.000045323 uV
+b1*x[n-1]: 0.000001146 uV
+b2*x[n-2]: -0.000045218 uV
+-a1*y[n-1]: -0.020905156 uV
+-a2*y[n-2]: 0.010931583 uV
+sum -> y[n]: -0.009972321 uV
+
+Filtered-artifact metrics:
+input_peak_abs_uV in (-0.1, 0.8): 64.197671
+filtered_peak_abs_uV in (-0.1, 0.8): 7.400778
+filtered_pre_rms_uV (-0.25 to -0.02 s): 2.739418
+filtered_post_rms_uV (0.02 to 0.50 s): 2.535028
+context_ylim_uV_not_plotted: -69.333485, 69.333485
+shared_zoom_ylim_uV: -8.499476, 8.499476
+
+Figure: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_epoch_lowpass80_step_dril_oz_100pct.png

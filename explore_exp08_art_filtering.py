@@ -1,29 +1,31 @@
-"""Recover ground-truth signal from artremoved, 45 Hz low-passed EXP08 epochs.
+"""Compare EXP08 raw Oz, SASS component, SSD component, and STIM phase recovery."""
 
-Compare three artifact suppression paths ranked by SNR: fixed raw channel (locked at 10%),
-SASS (covariance-based artifact subtraction), and SSD (signal-dominance eigendecomposition).
-Visualize ITPC recovery timecourse and SNR per path per intensity.
-"""
-
-import os
 from pathlib import Path
-import warnings
+import os
 
-MNE_CONFIG_ROOT = Path(r"C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS")
-(MNE_CONFIG_ROOT / ".mne").mkdir(parents=True, exist_ok=True)
-os.environ.setdefault("_MNE_FAKE_HOME_DIR", str(MNE_CONFIG_ROOT))
+os.environ.setdefault("_MNE_FAKE_HOME_DIR", str(Path(__file__).resolve().parent / ".mne"))
+os.environ["QT_API"] = "pyqt6"
+os.environ["MPLBACKEND"] = "qtagg"
 
 import matplotlib
-matplotlib.use("Agg")
+matplotlib.use("QtAgg", force=True)
+import matplotlib.pyplot as plt
+matplotlib.rcParams["backend"] = "QtAgg"
+plt.ion()
+
+
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
-from scipy import linalg
-from scipy.signal import butter, sosfilt
 
-import plot_helpers
-import preprocessing
-import sass
+from plot_helpers import save_phase_histogram_grid, save_plv_method_summary_figure
+from preprocessing import (
+    baseline_centered_window_rms_uv,
+    make_sass_component_candidates,
+    make_ssd_component_candidates,
+    score_signal_against_reference,
+    select_best_component_by_plv,
+)
 
 
 # ============================================================
@@ -34,676 +36,377 @@ EPOCH_DIRECTORY = Path(r"C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\E
 OUTPUT_DIRECTORY = EPOCH_DIRECTORY
 OUTPUT_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
-INTENSITY_LEVELS = [0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00]
-INTENSITY_LABELS = ["10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%"]
+# One intensity means one already-exported ON/rest/GT/STIM epoch set.
+INTENSITY_PCTS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+RAW_CHANNEL_NAME = "Oz"  # fixed posterior sensor; no data-driven channel reselection
 
-ON_WINDOW_S = (-0.5, 1.0)
-LATE_OFF_WINDOW_S = (1.5, 3.2)
-ITPC_WINDOW_S = (-0.5, 0.5)  # window used for ITPC/PLV summaries and plots
+# ON is the pulse-adjacent test epoch; late-OFF is the rest covariance for SASS.
+ON_WINDOW_S = (-0.5, 1.0)  # pulse-adjacent epochs already exported by EXP08 artifact-removal
+LATE_OFF_WINDOW_S = (1.5, 3.2)  # rest covariance for SASS; keep away from ON pulse response
 
-TARGET_CENTER_HZ = 13.0 # TODO: our current target is 13Hz, not 12
-SIGNAL_HALF_WIDTH_HZ = 0.5
-SIGNAL_BAND_HZ = (TARGET_CENTER_HZ - SIGNAL_HALF_WIDTH_HZ, TARGET_CENTER_HZ + SIGNAL_HALF_WIDTH_HZ)
-VIEW_BAND_HZ = (4.0, 20.0)
+# Keep the disputed pulse-adjacent phase window to test whether artremoved data is usable there.
+PHASE_WINDOW_S = (-0.5, 0.5)  # intentionally retained to test whether artremoved epochs still work here
+TARGET_CENTER_HZ = 13.0  # EXP08 target; do not re-estimate from noisy short GT FFTs
+SIGNAL_BAND_HZ = (12.5, 13.5)  # phase metric band around the 13 Hz target
+VIEW_BAND_HZ = (4.0, 20.0)  # decomposition covariance view; broad enough to include artifacts
+
+# SASS/SSD output component signals; ranking is component-space, not sensor-space.
+N_SASS_COMPONENTS = 6
+SASS_SKIP_COMPONENTS = 1  # skip the strongest ON-vs-lateOFF component before PLV ranking
 N_SSD_COMPONENTS = 6
+PHASE_FILTER_KWARGS = {"notch_hz": None}
 
-ARTREMOVED_LOWPASS_HZ = 45.0  # same causal cleanup view validated in epoch QC
-ARTREMOVED_LOWPASS_ORDER = 4
-PHASE_FILTER_KWARGS = {"notch_hz": None}  # 45 Hz low-pass makes a zero-phase 50 Hz notch unnecessary
+# Minimal numeric sanity check: pulse-window RMS after baseline-centering.
+SANITY_CHECK_PCTS = [10, 100]  # fast raw-vs-artremoved pulse-energy print
+SANITY_BASELINE_WINDOW_S = (-0.2, -0.05)
+SANITY_ACUTE_WINDOW_S = (0.0, 0.1)
 
+# Fixed output names make reruns deterministic and easy to compare.
+ITPC_TIMESERIES_PATH = OUTPUT_DIRECTORY / "exp08_itpc_artremoved_raw_sass_ssd_vs_gt.png"
+ITPC_SUMMARY_PATH = OUTPUT_DIRECTORY / "exp08_itpc_artremoved_summary.png"
+PLV_SUMMARY_PATH = OUTPUT_DIRECTORY / "exp08_plv_artremoved_raw_sass_ssd_vs_gt.png"
+PHASE_GRID_STEM = "exp08_phase_hist_artremoved_raw_sass_ssd_vs_gt"
+MANIFEST_PATH = OUTPUT_DIRECTORY / "exp08_art_filtering_manifest.txt"
+
+# Stable method keys used in results[pct][method], figures, and the manifest.
+METHODS = ("raw_oz", "sass_component", "ssd_component", "gt_vs_stim")
+METHOD_LABELS = {
+    "raw_oz": "Raw Oz",
+    "sass_component": "SASS component",
+    "ssd_component": "SSD component",
+    "gt_vs_stim": "GT vs STIM",
+}
 METHOD_COLORS = {
-    "raw": "#1f77b4",         # muted blue
-    "sass": "#ff7f0e",        # muted orange
-    "ssd": "#2ca02c",         # muted green
-    "gt_ref": "#d62728",      # red for reference
+    "raw_oz": "#2C7BB6",
+    "sass_component": "#009E73",
+    "ssd_component": "#D95F02",
+    "gt_vs_stim": "#6A51A3",
 }
 
-OUTPUT_STEM = "exp08_art_filtering_lowpass45"
-ITPC_TIMECOURSE_FIGURE_PATH = OUTPUT_DIRECTORY / f"{OUTPUT_STEM}_itpc_timecourse_by_intensity.png"
-ITPC_SUMMARY_FIGURE_PATH = OUTPUT_DIRECTORY / f"{OUTPUT_STEM}_itpc_summary.png"
-PLV_SUMMARY_FIGURE_PATH = OUTPUT_DIRECTORY / f"{OUTPUT_STEM}_plv_summary.png"
-PHASE_GRID_STEM = f"{OUTPUT_STEM}_phase_grid"
-PHASE_GRID_PATH = OUTPUT_DIRECTORY / f"{PHASE_GRID_STEM}.png"
-MANIFEST_PATH = OUTPUT_DIRECTORY / f"{OUTPUT_STEM}_summary.txt"
+
+def read_epochs(file_name: str) -> mne.Epochs:
+    return mne.read_epochs(EPOCH_DIRECTORY / file_name, preload=True, verbose=False)
 
 
-def copy_with_causal_lowpass(epochs: mne.Epochs) -> mne.Epochs:
-    """Return an epoch copy filtered with the validated 45 Hz causal low-pass."""
-    lowpassed = epochs.copy()
-    sampling_rate_hz = float(lowpassed.info["sfreq"])
-    lowpass_sos = butter(
-        ARTREMOVED_LOWPASS_ORDER,
-        ARTREMOVED_LOWPASS_HZ,
-        btype="lowpass",
-        fs=sampling_rate_hz,
-        output="sos",
-    )
-    lowpassed._data = sosfilt(lowpass_sos, lowpassed.get_data(), axis=-1)
-    return lowpassed
-
-
-# ════════════════════════════════════════════════════════════════════════════
+# ============================================================
 # PIPELINE OVERVIEW
-# ════════════════════════════════════════════════════════════════════════════
+# ============================================================
 #
-# Pre-extracted epochs (10 intensities, 2 windows, 2 traces)
-# ├─ ON epochs (28 EEG, 20×28×601 per intensity)
-# ├─ late-OFF epochs (28 EEG, 20×28×601 per intensity)
-# ├─ GT ON epochs (1 channel, 20×1×601 per intensity)
-# └─ GT late-OFF epochs (1 channel, 20×1×601 per intensity)
-#        │
-#        ├─ Covariance matrices (ON vs. late-OFF per intensity)
-#        │
-#        ├─────────────┬──────────────┬──────────────┐
-#        ▼             ▼              ▼              ▼
-#    RAW PATH     SASS PATH       SSD PATH      GT REFERENCE
-#    (fixed ch)   (covariance)    (eigendecomp) (per intensity)
-#        │             │              │              │
-#        └─────────────┴──────────────┴──────────────┘
-#                      │
-#            SNR rank & ITPC per path
-#                      │
-#    ┌─────────────────┴─────────────────┐
-#    ▼                                   ▼
-#  ITPC course figure              SNR course figure
-#  (3 lines: raw/SASS/SSD)         (3 lines: raw/SASS/SSD)
+# exported FIF epochs
+#   -> artremoved ON sensor epochs: (epochs, channels, samples)
+#   -> raw late-OFF rest epochs:    (epochs, channels, samples)
+#   -> GT/STIM reference epochs:    (epochs, 1 channel, samples)
+#
+# method paths
+#   -> raw Oz sensor trace
+#   -> SASS components from ON-vs-late-OFF covariance
+#   -> SSD components from 13 Hz signal covariance
+#   -> STIM timing trace scored against recorded GT
+#
+# shared scoring
+#   -> fixed 13 Hz band phase, PLV, ITPC curve, phase histogram inputs
 #
 
 
 # ============================================================
-# 1) LOAD PRE-EXTRACTED EPOCHS
+# 1) LOAD EXPORTED EPOCHS
 # ============================================================
 
-print("Loading pre-extracted epochs...")
-epochs_on_all = {}
-epochs_lateoff_all = {}
-gt_on_all = {}
-gt_lateoff_all = {}
-stim_on_all = {}
-stim_lateoff_all = {}
+print("Loading EXP08 artremoved ON epochs and raw late-OFF rest epochs...")
+# Dictionary shape: pct -> MNE Epochs. All files share the same epoch time axis.
+epochs_on_by_pct: dict[int, mne.Epochs] = {}
+epochs_lateoff_by_pct: dict[int, mne.Epochs] = {}
+gt_on_by_pct: dict[int, mne.Epochs] = {}
+stim_on_by_pct: dict[int, mne.Epochs] = {}
 
-for intensity_level, label in zip(INTENSITY_LEVELS, INTENSITY_LABELS):
-    intensity_pct = int(intensity_level * 100)
+for pct in INTENSITY_PCTS:
+    # ON is already artifact-removed; late-OFF stays raw for the rest covariance estimate.
+    epochs_on_by_pct[pct] = read_epochs(f"exp08_epochs_{pct}pct_on_artremoved-epo.fif")
+    epochs_lateoff_by_pct[pct] = read_epochs(f"exp08_epochs_{pct}pct_lateoff-epo.fif").pick(epochs_on_by_pct[pct].ch_names)
 
-    # ══ 1.1 Load ON epochs ══
-    epochs_on_path = EPOCH_DIRECTORY / f"exp08_epochs_{intensity_pct}pct_on_artremoved-epo.fif"
-    epochs_on = copy_with_causal_lowpass(mne.read_epochs(str(epochs_on_path), preload=True, verbose=False))
-    epochs_on_all[intensity_pct] = epochs_on
+    # Add simple low pass filter to remove the small residual pulse artifact
+    epochs_on_by_pct[pct].filter(None, 80, verbose=False)
 
-    # ══ 1.2 Load late-OFF epochs ══
-    epochs_lateoff_path = EPOCH_DIRECTORY / f"exp08_epochs_{intensity_pct}pct_lateoff-epo.fif"
-    epochs_lateoff = copy_with_causal_lowpass(mne.read_epochs(str(epochs_lateoff_path), preload=True, verbose=False))
-    epochs_lateoff_all[intensity_pct] = epochs_lateoff
+    # GT is the biological/reference phase target; STIM is the pulse timing control.
+    gt_on_by_pct[pct] = read_epochs(f"exp08_gt_epochs_{pct}pct_on-epo.fif")
+    stim_on_by_pct[pct] = read_epochs(f"exp08_stim_epochs_{pct}pct_on-epo.fif")
+    print(f"{pct}%: ON={len(epochs_on_by_pct[pct])}, late-OFF={len(epochs_lateoff_by_pct[pct])}")
 
-    # ══ 1.3 Load GT ON epochs ══
-    gt_on_path = EPOCH_DIRECTORY / f"exp08_gt_epochs_{intensity_pct}pct_on-epo.fif"
-    gt_on = copy_with_causal_lowpass(mne.read_epochs(str(gt_on_path), preload=True, verbose=False))
-    gt_on_all[intensity_pct] = gt_on
+# Santy check: print raw vs artremoved pulse energy in 0-0.1 s window, baseline-centered RMS in µV.
+# Manual sanity plot: one 10% artremoved epoch, all sensors, to inspect pulse-locked structure.
+# Data shape after indexing: (channels, samples), converted to uV only for display.
+# data = epochs_on_by_pct[100][10].pick(["Oz"]).get_data()[0]  # epoch 0, all channels
+# data = data - data.mean()
+# data_f = mne.filter.filter_data(data, sfreq=1000, l_freq=0.5, h_freq=80, verbose=False)
 
-    # ══ 1.4 Load GT late-OFF epochs ══
-    gt_lateoff_path = EPOCH_DIRECTORY / f"exp08_gt_epochs_{intensity_pct}pct_lateoff-epo.fif"
-    gt_lateoff = copy_with_causal_lowpass(mne.read_epochs(str(gt_lateoff_path), preload=True, verbose=False))
-    gt_lateoff_all[intensity_pct] = gt_lateoff
+# plt.plot(epochs_on_by_pct[100].times, data.T * 1e6)
+# plt.plot(epochs_on_by_pct[100].times, data_f.T * 1e6)
+# plt.show()
+# plt.pause(interval=30.1)  # pause to ensure the plot renders before the script continues
+# scheneurkel
+sampling_rate_hz = float(epochs_on_by_pct[INTENSITY_PCTS[0]].info["sfreq"])
+epoch_times_s = epochs_on_by_pct[INTENSITY_PCTS[0]].times
 
-    # ══ 1.5 Load stimulus ON epochs ══
-    stim_on_path = EPOCH_DIRECTORY / f"exp08_stim_epochs_{intensity_pct}pct_on-epo.fif"
-    stim_on = copy_with_causal_lowpass(mne.read_epochs(str(stim_on_path), preload=True, verbose=False))
-    stim_on_all[intensity_pct] = stim_on
+# Seconds -> sample mask; this same mask gates every ITPC and PLV summary.
+phase_mask = (epoch_times_s >= PHASE_WINDOW_S[0]) & (epoch_times_s <= PHASE_WINDOW_S[1])
+phase_time_s = epoch_times_s[phase_mask]
 
-    # ══ 1.6 Load stimulus late-OFF epochs ══
-    stim_lateoff_path = EPOCH_DIRECTORY / f"exp08_stim_epochs_{intensity_pct}pct_lateoff-epo.fif"
-    stim_lateoff = copy_with_causal_lowpass(mne.read_epochs(str(stim_lateoff_path), preload=True, verbose=False))
-    stim_lateoff_all[intensity_pct] = stim_lateoff
-
-    print(f"  {label}: {len(epochs_on)} ON epochs, {len(epochs_lateoff)} late-OFF epochs")
-
-sfreq = float(epochs_on.info["sfreq"])
-print(f"\nLoaded: {sfreq:.0f} Hz, {len(epochs_on.ch_names)} EEG channels")
-print(f"Applied causal {ARTREMOVED_LOWPASS_HZ:.0f} Hz low-pass to EEG, GT, and stimulus epochs in memory.")
-print("ITPC/PLV phase-band filters skip the zero-phase 50 Hz notch after this low-pass.")
-
-# Compute ITPC on full low-passed epochs, then report the pulse-centered window below.
-_epoch_times = epochs_on.times
-itpc_mask = (_epoch_times >= ITPC_WINDOW_S[0]) & (_epoch_times <= ITPC_WINDOW_S[1])
-if not np.any(itpc_mask):
-    raise RuntimeError("ITPC_WINDOW_S does not overlap the loaded epoch time axis.")
-plv_window_from_epoch_start_s = (
-    float(ITPC_WINDOW_S[0] - _epoch_times[0]),
-    float(ITPC_WINDOW_S[1] - _epoch_times[0]),
+# The scorer expects the phase window relative to epoch start, not pulse-relative time.
+phase_window_from_start_s = (
+    PHASE_WINDOW_S[0] - float(epoch_times_s[0]),
+    PHASE_WINDOW_S[1] - float(epoch_times_s[0]),
 )
+raw_channel_idx = epochs_on_by_pct[INTENSITY_PCTS[0]].ch_names.index(RAW_CHANNEL_NAME)
 
 
 # ============================================================
-# 2) PREPARE COVARIANCE MATRICES (per-intensity baseline)
+# 2) QUICK ARTIFACT SANITY PRINT
 # ============================================================
 
-print("\nComputing covariance matrices...")
-cov_on_by_intensity = {}
-cov_lateoff_by_intensity = {}
-
-for intensity_level, label in zip(INTENSITY_LEVELS, INTENSITY_LABELS):
-    intensity_pct = int(intensity_level * 100)
-
-    # ══ 2.1 Extract and filter ON/late-OFF epochs ══
-    on_data = preprocessing.filter_signal(
-        epochs_on_all[intensity_pct].get_data(),
-        sfreq,
-        VIEW_BAND_HZ[0],
-        VIEW_BAND_HZ[1],
-        **PHASE_FILTER_KWARGS,
+print("Artifact sanity: baseline-centered RMS in 0-0.1 s.")
+for pct in SANITY_CHECK_PCTS:
+    # Baseline-centering makes this a pulse-energy check, not a slow-offset check.
+    raw_rms = baseline_centered_window_rms_uv(
+        read_epochs(f"exp08_epochs_{pct}pct_on-epo.fif"),
+        SANITY_BASELINE_WINDOW_S,
+        SANITY_ACUTE_WINDOW_S,
     )
-    lateoff_data = preprocessing.filter_signal(
-        epochs_lateoff_all[intensity_pct].get_data(),
-        sfreq,
-        VIEW_BAND_HZ[0],
-        VIEW_BAND_HZ[1],
-        **PHASE_FILTER_KWARGS,
+    clean_rms = baseline_centered_window_rms_uv(
+        epochs_on_by_pct[pct],
+        SANITY_BASELINE_WINDOW_S,
+        SANITY_ACUTE_WINDOW_S,
     )
+    print(f"sanity {pct}%: raw={raw_rms:.1f} uV, artremoved={clean_rms:.1f} uV")
 
-    # ══ 2.2 Compute mean covariance (concatenate all epochs across channel-time) ══
-    n_epochs_on, n_channels, n_samples_on = on_data.shape
-    n_epochs_off, _, n_samples_off = lateoff_data.shape
-
-    on_concat = on_data.transpose(1, 0, 2).reshape(n_channels, -1)
-    lateoff_concat = lateoff_data.transpose(1, 0, 2).reshape(n_channels, -1)
-
-    cov_on = np.cov(on_concat)
-    cov_lateoff = np.cov(lateoff_concat)
-
-    cov_on_by_intensity[intensity_pct] = cov_on
-    cov_lateoff_by_intensity[intensity_pct] = cov_lateoff
+# Shared kwargs keep PLV and ITPC on the same phase/scoring path.
+phase_score_kwargs = {
+    "sampling_rate_hz": sampling_rate_hz,
+    "signal_band_hz": SIGNAL_BAND_HZ,
+    "view_band_hz": VIEW_BAND_HZ,
+    "reference_frequency_hz": TARGET_CENTER_HZ,
+    "phase_window_from_epoch_start_s": phase_window_from_start_s,
+    "time_mask_samples": phase_mask,
+    "filter_kwargs": PHASE_FILTER_KWARGS,
+}
 
 
 # ============================================================
-# 3) RAW CHANNEL PATH (FIXED AT 10%)
+# 3) BUILD METHOD SIGNALS AND SCORE AGAINST GT
 # ============================================================
 
-print("\nRaw channel path: detecting best channel at 10%...")
+# Results shape: results[pct][method] -> score dict used directly by all figures.
+results: dict[int, dict[str, dict[str, object]]] = {pct: {} for pct in INTENSITY_PCTS}
+selection_rows: list[dict[str, object]] = []
 
-# ══ 3.1 Detect best channel @ 10% intensity ══
-on_data_10pct = epochs_on_all[10].get_data()  # (20, 28, 601) µV
-gt_on_10pct = gt_on_all[10].get_data().squeeze()  # (20, 601) µV
-channel_names = epochs_on_all[10].ch_names
+for pct in INTENSITY_PCTS:
+    # MNE Epochs -> Volts arrays: sensor epochs are (epochs, channels, samples).
+    on_data = epochs_on_by_pct[pct].get_data()
+    lateoff_data = epochs_lateoff_by_pct[pct].get_data()
 
-snr_scores_10pct = []
-for ch_idx, ch_name in enumerate(channel_names):
-    ch_data_10pct = on_data_10pct[:, ch_idx, :]  # (20, 601)
-    snr = preprocessing.compute_snr_linear(ch_data_10pct, sfreq, SIGNAL_BAND_HZ, VIEW_BAND_HZ)
-    snr_scores_10pct.append((ch_name, float(snr)))
+    # Reference epochs are single-channel matrices: (epochs, samples).
+    gt_data = gt_on_by_pct[pct].get_data()[:, 0, :]
+    stim_data = stim_on_by_pct[pct].get_data()[:, 0, :]
 
-best_channel_name = max(snr_scores_10pct, key=lambda x: x[1])[0]
-best_channel_idx = channel_names.index(best_channel_name)
-print(f"  Best channel: {best_channel_name} (SNR={snr_scores_10pct[best_channel_idx][1]:.3f})")
-
-# ══ 3.2 Lock and analyze across all intensities ══
-raw_snr_by_intensity = []
-raw_itpc_curves = {}  # timecourse per intensity
-
-for intensity_level, label in zip(INTENSITY_LEVELS, INTENSITY_LABELS):
-    intensity_pct = int(intensity_level * 100)
-
-    on_data = epochs_on_all[intensity_pct].get_data()[:, best_channel_idx, :]  # (20, 601)
-    gt_on = gt_on_all[intensity_pct].get_data().squeeze()  # (20, 601)
-
-    snr = preprocessing.compute_snr_linear(on_data, sfreq, SIGNAL_BAND_HZ, VIEW_BAND_HZ)
-    itpc_curve = preprocessing.compute_itpc_timecourse(
+    # ON artremoved sensor epochs + late-OFF rest epochs -> SASS component activations.
+    # Candidate components are ranked by PLV to the recorded GT, not by cleaned sensor PLV.
+    sass_candidates, sass_auto_nulls = make_sass_component_candidates(
         on_data,
-        gt_on,
-        sfreq,
-        SIGNAL_BAND_HZ,
-        filter_kwargs=PHASE_FILTER_KWARGS,
-    )[itpc_mask]
-
-    raw_snr_by_intensity.append(float(snr))
-    raw_itpc_curves[intensity_pct] = itpc_curve
-
-
-# ============================================================
-# 4) SASS PATH (COVARIANCE-BASED ARTIFACT SUPPRESSION)
-# ============================================================
-
-print("\nSASS path: applying covariance-based artifact suppression...")
-sass_snr_by_intensity = []
-sass_itpc_curves = {}  # timecourse per intensity
-sass_channels_by_intensity = {}
-
-for intensity_level, label in zip(INTENSITY_LEVELS, INTENSITY_LABELS):
-    intensity_pct = int(intensity_level * 100)
-
-    # ══ 4.1 Get covariance matrices ══
-    cov_on = cov_on_by_intensity[intensity_pct]
-    cov_lateoff = cov_lateoff_by_intensity[intensity_pct]
-
-    # ══ 4.2 Apply SASS ══
-    on_data = preprocessing.filter_signal(
-        epochs_on_all[intensity_pct].get_data(),
-        sfreq,
-        VIEW_BAND_HZ[0],
-        VIEW_BAND_HZ[1],
-        **PHASE_FILTER_KWARGS,
+        lateoff_data,
+        sampling_rate_hz,
+        VIEW_BAND_HZ,
+        N_SASS_COMPONENTS,
+        skip_components=SASS_SKIP_COMPONENTS,
     )
-    n_epochs, n_channels, n_samples = on_data.shape
-    on_concat = on_data.transpose(1, 0, 2).reshape(n_channels, -1)
+    sass_best = select_best_component_by_plv(sass_candidates, gt_data, **phase_score_kwargs)
 
-    sass_concat = sass.sass(on_concat, cov_on, cov_lateoff)
-    sass_data = sass_concat.reshape(n_channels, n_epochs, n_samples).transpose(1, 0, 2)
-
-    # ══ 4.3 Rank all SASS-cleaned channels by SNR ══
-    gt_on = gt_on_all[intensity_pct].get_data().squeeze()
-
-    sass_snr_scores = []
-    for ch_idx, ch_name in enumerate(channel_names):
-        ch_sass_data = sass_data[:, ch_idx, :]
-        snr = preprocessing.compute_snr_linear(ch_sass_data, sfreq, SIGNAL_BAND_HZ, VIEW_BAND_HZ)
-        sass_snr_scores.append((ch_name, float(snr), ch_sass_data))
-
-    # ══ 4.4 Select best SASS channel by SNR ══
-    best_sass_ch_name, best_sass_snr, best_sass_data = max(sass_snr_scores, key=lambda x: x[1])
-    sass_channels_by_intensity[intensity_pct] = best_sass_ch_name
-
-    itpc_curve = preprocessing.compute_itpc_timecourse(
-        best_sass_data,
-        gt_on,
-        sfreq,
+    # ON artremoved sensor epochs -> SSD component activations, ranked with the same GT PLV rule.
+    ssd_candidates = make_ssd_component_candidates(
+        on_data,
+        sampling_rate_hz,
         SIGNAL_BAND_HZ,
-        filter_kwargs=PHASE_FILTER_KWARGS,
-    )[itpc_mask]
-
-    sass_snr_by_intensity.append(best_sass_snr)
-    sass_itpc_curves[intensity_pct] = itpc_curve
-
-
-# ============================================================
-# 5) SSD PATH (SIGNAL DOMINANCE VIA EIGENDECOMPOSITION)
-# ============================================================
-
-print("\nSSD path: eigendecomposing signal vs. view bands...")
-ssd_snr_by_intensity = []
-ssd_itpc_curves = {}  # timecourse per intensity
-ssd_components_by_intensity = {}
-
-for intensity_level, label in zip(INTENSITY_LEVELS, INTENSITY_LABELS):
-    intensity_pct = int(intensity_level * 100)
-
-    # ══ 5.1 Load raw data and filter to signal/view bands ══
-    on_data_full = epochs_on_all[intensity_pct].get_data()  # (20, 28, 601)
-
-    # Manual SSD: compute covariance in signal and view bands
-    # Flatten all epochs to (28 channels, 20*601 samples) for covariance
-    on_data_flat = on_data_full.transpose(1, 0, 2).reshape(on_data_full.shape[1], -1)  # (28, 12020)
-
-    on_signal = preprocessing.filter_signal(on_data_flat, sfreq, SIGNAL_BAND_HZ[0], SIGNAL_BAND_HZ[1], **PHASE_FILTER_KWARGS)
-    on_view = preprocessing.filter_signal(on_data_flat, sfreq, VIEW_BAND_HZ[0], VIEW_BAND_HZ[1], **PHASE_FILTER_KWARGS)
-
-    on_signal_concat = on_signal
-    on_view_concat = on_view
-
-    cov_signal = np.cov(on_signal_concat)
-    cov_view = np.cov(on_view_concat)
-
-    # ══ 5.2 Eigendecompose and rank components by SNR ══
-    evals, evecs = linalg.eig(cov_signal, cov_view)
-    idx = np.argsort(np.real(evals))[::-1]
-    evals, evecs = np.real(evals[idx]), evecs[:, idx]
-    W = evecs.T[:N_SSD_COMPONENTS]  # (N_SSD_COMPONENTS, n_channels) spatial filters
-
-    # ══ 5.3 Extract components and rank by SNR ══
-    gt_on = gt_on_all[intensity_pct].get_data().squeeze()
-
-    ssd_snr_scores = []
-    for comp_idx in range(W.shape[0]):
-        comp_data = W[comp_idx] @ on_data_full.transpose(1, 0, 2).reshape(on_data_full.shape[1], -1)
-        comp_epochs = comp_data.reshape(on_data_full.shape[0], -1)
-
-        snr = preprocessing.compute_snr_linear(comp_epochs, sfreq, SIGNAL_BAND_HZ, VIEW_BAND_HZ)
-        ssd_snr_scores.append((comp_idx, float(snr), comp_epochs))
-
-    # ══ 5.4 Select best SSD component by SNR ══
-    best_ssd_comp_idx, best_ssd_snr, best_ssd_data = max(ssd_snr_scores, key=lambda x: x[1])
-    ssd_components_by_intensity[intensity_pct] = best_ssd_comp_idx
-
-    itpc_curve = preprocessing.compute_itpc_timecourse(
-        best_ssd_data,
-        gt_on,
-        sfreq,
-        SIGNAL_BAND_HZ,
-        filter_kwargs=PHASE_FILTER_KWARGS,
-    )[itpc_mask]
-
-    ssd_snr_by_intensity.append(best_ssd_snr)
-    ssd_itpc_curves[intensity_pct] = itpc_curve
-
-
-# ============================================================
-# 6) STIMULUS REFERENCE (NEGATIVE CONTROL - LOW ITPC EXPECTED)
-# ============================================================
-
-print("\nComputing stimulus reference curves (GT vs stim)...")
-stim_itpc_curves = {}  # GT vs stim (should be LOW, confirming separation)
-
-for intensity_level, label in zip(INTENSITY_LEVELS, INTENSITY_LABELS):
-    intensity_pct = int(intensity_level * 100)
-
-    # ══ 6.1 GT vs stimulus as negative control ══
-    gt_on = gt_on_all[intensity_pct].get_data().squeeze()  # (20, 601)
-    stim_on = stim_on_all[intensity_pct].get_data().squeeze()  # (20, 601)
-
-    itpc_curve_stim = preprocessing.compute_itpc_timecourse(
-        gt_on,
-        stim_on,
-        sfreq,
-        SIGNAL_BAND_HZ,
-        filter_kwargs=PHASE_FILTER_KWARGS,
-    )[itpc_mask]
-    stim_itpc_curves[intensity_pct] = itpc_curve_stim
-
-
-# ============================================================
-# 7) COMPUTE PLV ON ON-WINDOWS
-# ============================================================
-
-print("\nComputing PLV on ON windows...")
-
-# Determine reference peak frequency from 10% intensity GT
-gt_on_10pct = gt_on_all[10].get_data().squeeze()
-gt_signal = preprocessing.filter_signal(gt_on_10pct, sfreq, VIEW_BAND_HZ[0], VIEW_BAND_HZ[1], **PHASE_FILTER_KWARGS)
-gt_psd = np.mean(np.abs(np.fft.rfft(gt_signal, axis=-1)) ** 2, axis=0)
-freqs = np.fft.rfftfreq(gt_signal.shape[-1], 1 / sfreq)
-target_peak_hz = freqs[np.argmax(gt_psd)]
-
-raw_plv_by_intensity = []
-sass_plv_by_intensity = []
-ssd_plv_by_intensity = []
-stim_plv_by_intensity = []
-
-for intensity_level, label in zip(INTENSITY_LEVELS, INTENSITY_LABELS):
-    intensity_pct = int(intensity_level * 100)
-
-    # ══ 7.1 Extract ON window data ══
-    on_data = epochs_on_all[intensity_pct].get_data()  # (20, 28, 601)
-    gt_on = gt_on_all[intensity_pct].get_data().squeeze()  # (20, 601)
-    stim_on = stim_on_all[intensity_pct].get_data().squeeze()  # (20, 601)
-
-    # ══ 7.2 Compute raw PLV ══
-    raw_on_data = on_data[:, best_channel_idx, :]  # (20, 601)
-    raw_plv_metrics = preprocessing.compute_epoch_plv_summary(
-        raw_on_data,
-        gt_on,
-        sfreq,
-        SIGNAL_BAND_HZ,
-        target_peak_hz,
-        time_window_s=plv_window_from_epoch_start_s,
-        filter_kwargs=PHASE_FILTER_KWARGS,
+        VIEW_BAND_HZ,
+        N_SSD_COMPONENTS,
     )
-    raw_plv_by_intensity.append(float(raw_plv_metrics["plv"]))
+    ssd_best = select_best_component_by_plv(ssd_candidates, gt_data, **phase_score_kwargs)
 
-    # ══ 7.3 Compute SASS PLV ══
-    sass_on_data_best = np.zeros((on_data.shape[0], on_data.shape[2]))
-    on_data_view = preprocessing.filter_signal(on_data, sfreq, VIEW_BAND_HZ[0], VIEW_BAND_HZ[1], **PHASE_FILTER_KWARGS)
-    lateoff_data = epochs_lateoff_all[intensity_pct].get_data()
-    lateoff_data_view = preprocessing.filter_signal(lateoff_data, sfreq, VIEW_BAND_HZ[0], VIEW_BAND_HZ[1], **PHASE_FILTER_KWARGS)
-    n_epochs_on, n_channels_on, n_samples_on = on_data_view.shape
-    n_epochs_off = lateoff_data_view.shape[0]
-
-    on_view_concat = on_data_view.transpose(1, 0, 2).reshape(n_channels_on, -1)
-    lateoff_view_concat = lateoff_data_view.transpose(1, 0, 2).reshape(n_channels_on, -1)
-
-    cov_on_sass = np.cov(on_view_concat)
-    cov_lateoff_sass = np.cov(lateoff_view_concat)
-    sass_cleaned = sass.sass(on_view_concat, cov_on_sass, cov_lateoff_sass)
-    sass_data = sass_cleaned.reshape(n_channels_on, n_epochs_on, n_samples_on).transpose(1, 0, 2)
-
-    best_sass_ch_name = sass_channels_by_intensity[intensity_pct]
-    best_sass_ch_idx = epochs_on_all[intensity_pct].ch_names.index(best_sass_ch_name)
-    sass_on_data_best = sass_data[:, best_sass_ch_idx, :]
-
-    sass_plv_metrics = preprocessing.compute_epoch_plv_summary(
-        sass_on_data_best,
-        gt_on,
-        sfreq,
-        SIGNAL_BAND_HZ,
-        target_peak_hz,
-        time_window_s=plv_window_from_epoch_start_s,
-        filter_kwargs=PHASE_FILTER_KWARGS,
+    # Shared scorer applies the fixed 13 Hz, 12.5-13.5 Hz phase metric to every method path.
+    # Raw Oz remains the sensor baseline; STIM-vs-GT is the timing-control comparison.
+    raw_score = score_signal_against_reference(
+        on_data[:, raw_channel_idx, :],
+        gt_data,
+        **phase_score_kwargs,
     )
-    sass_plv_by_intensity.append(float(sass_plv_metrics["plv"]))
 
-    # ══ 7.4 Compute SSD PLV ══
-    on_data_flat = on_data.transpose(1, 0, 2).reshape(on_data.shape[1], -1)
-    on_signal_ssd = preprocessing.filter_signal(on_data_flat, sfreq, SIGNAL_BAND_HZ[0], SIGNAL_BAND_HZ[1], **PHASE_FILTER_KWARGS)
-    on_view_ssd = preprocessing.filter_signal(on_data_flat, sfreq, VIEW_BAND_HZ[0], VIEW_BAND_HZ[1], **PHASE_FILTER_KWARGS)
+    if pct == 100:
+        from scipy.signal import butter, sosfilt, sosfiltfilt
 
-    cov_signal_ssd = np.cov(on_signal_ssd)
-    cov_view_ssd = np.cov(on_view_ssd)
+        raw_oz = on_data[:, raw_channel_idx, :]
+        raw_oz = raw_oz.mean(axis=0)
 
-    evals_ssd, evecs_ssd = linalg.eig(cov_signal_ssd, cov_view_ssd)
-    idx_ssd = np.argsort(np.real(evals_ssd))[::-1]
-    evecs_ssd = evecs_ssd[:, idx_ssd]
-    W_ssd = evecs_ssd.T[:N_SSD_COMPONENTS]
 
-    best_ssd_comp_idx = ssd_components_by_intensity[intensity_pct]
-    ssd_comp_filter = W_ssd[best_ssd_comp_idx]
-    ssd_on_data_best = (ssd_comp_filter @ on_data_flat).reshape(on_data.shape[0], -1)
+        #quickly deman the raw_oz
+        raw_oz = raw_oz - raw_oz.mean(axis=0, keepdims=True)
+        sos_wide = butter(2, [4, 20], btype="bandpass", fs=sampling_rate_hz, output="sos")
 
-    ssd_plv_metrics = preprocessing.compute_epoch_plv_summary(
-        ssd_on_data_best,
-        gt_on,
-        sfreq,
-        SIGNAL_BAND_HZ,
-        target_peak_hz,
-        time_window_s=plv_window_from_epoch_start_s,
-        filter_kwargs=PHASE_FILTER_KWARGS,
+        #raw_oz_phase = filter_signal(raw_oz, sampling_rate_hz, SIGNAL_BAND_HZ[0], SIGNAL_BAND_HZ[1], **PHASE_FILTER_KWARGS)
+        plt.plot(epoch_times_s, raw_oz * 1e6, label="raw Oz before ITPC filter")
+        plt.plot(epoch_times_s, sosfilt(sos_wide, raw_oz) * 1e6, label="causal 10-16 Hz order2")
+        plt.ylim(-10, 10)
+        plt.legend(); plt.show()
+        plt.pause(interval=40.1)  # pause to ensure the plot renders before the script continues
+    stim_score = score_signal_against_reference(stim_data, gt_data, **phase_score_kwargs)
+
+
+    results[pct] = {
+        "raw_oz": {**raw_score, "label": RAW_CHANNEL_NAME},
+        "sass_component": {**sass_best, "auto_null_count": sass_auto_nulls},
+        "ssd_component": ssd_best,
+        "gt_vs_stim": {**stim_score, "label": "STIM"},
+    }
+
+    selection_rows.append(
+        {
+            "pct": pct,
+            "raw_plv": results[pct]["raw_oz"]["plv"],
+            "sass_component": int(results[pct]["sass_component"]["index"]) + 1,
+            "sass_lambda": results[pct]["sass_component"]["lambda"],
+            "sass_plv": results[pct]["sass_component"]["plv"],
+            "sass_auto_nulls": sass_auto_nulls,
+            "ssd_component": int(results[pct]["ssd_component"]["index"]) + 1,
+            "ssd_lambda": results[pct]["ssd_component"]["lambda"],
+            "ssd_plv": results[pct]["ssd_component"]["plv"],
+            "stim_plv": results[pct]["gt_vs_stim"]["plv"],
+        }
     )
-    ssd_plv_by_intensity.append(float(ssd_plv_metrics["plv"]))
 
-    # ══ 7.5 Compute STIM reference PLV ══
-    stim_plv_metrics = preprocessing.compute_epoch_plv_summary(
-        stim_on,
-        gt_on,
-        sfreq,
-        SIGNAL_BAND_HZ,
-        target_peak_hz,
-        time_window_s=plv_window_from_epoch_start_s,
-        filter_kwargs=PHASE_FILTER_KWARGS,
+    # Compact progress print: chosen component and PLV per path, without pausing the run.
+    print(
+        f"{pct}% PLV: raw={results[pct]['raw_oz']['plv']:.3f}, "
+        f"SASS C{selection_rows[-1]['sass_component']}={results[pct]['sass_component']['plv']:.3f}, "
+        f"SSD C{selection_rows[-1]['ssd_component']}={results[pct]['ssd_component']['plv']:.3f}, "
+        f"stim={results[pct]['gt_vs_stim']['plv']:.3f}"
     )
-    stim_plv_by_intensity.append(float(stim_plv_metrics["plv"]))
 
-    # ══ 7.6 Create individual phase grid figure per intensity (no GT-STIM) ══
-    intensity_phase_grid = [
-        [
-            {
-                "title": f"Raw {best_channel_name}\nPLV={float(raw_plv_metrics['plv']):.2f}",
-                "phases": raw_plv_metrics.get("phase_samples", np.array([0.0])),
-                "plv": float(raw_plv_metrics["plv"]),
-                "p_value": float(raw_plv_metrics.get("p_value", 1.0)),
-                "color": METHOD_COLORS["raw"],
-            },
-            {
-                "title": f"SASS {best_sass_ch_name}\nPLV={float(sass_plv_metrics['plv']):.2f}",
-                "phases": sass_plv_metrics.get("phase_samples", np.array([0.0])),
-                "plv": float(sass_plv_metrics["plv"]),
-                "p_value": float(sass_plv_metrics.get("p_value", 1.0)),
-                "color": METHOD_COLORS["sass"],
-            },
-            {
-                "title": f"SSD Comp{best_ssd_comp_idx + 1}\nPLV={float(ssd_plv_metrics['plv']):.2f}",
-                "phases": ssd_plv_metrics.get("phase_samples", np.array([0.0])),
-                "plv": float(ssd_plv_metrics["plv"]),
-                "p_value": float(ssd_plv_metrics.get("p_value", 1.0)),
-                "color": METHOD_COLORS["ssd"],
-            },
-        ]
+
+# ============================================================
+# 4) SAVE METHOD FIGURES
+# ============================================================
+
+for pct in INTENSITY_PCTS:
+    # Phase samples are per-epoch phase differences to GT inside PHASE_WINDOW_S.
+    phase_panels = [
+        {
+            "phases": np.asarray(results[pct][method]["phase_samples"]),
+            "plv": float(results[pct][method]["plv"]),
+            "p_value": float(results[pct][method]["p_value"]),
+            "title": f"{METHOD_LABELS[method]}\nPLV={results[pct][method]['plv']:.2f}",
+            "color": METHOD_COLORS[method],
+        }
+        for method in METHODS
     ]
-    intensity_phase_path = OUTPUT_DIRECTORY / f"{PHASE_GRID_STEM}_{intensity_pct}pct.png"
-    plot_helpers.save_phase_histogram_grid(
-        phase_grid_rows=intensity_phase_grid,
-        output_path=intensity_phase_path,
-        title=f"{label} phase distributions against GT after 45 Hz low-pass",
-        n_columns=3,
+    save_phase_histogram_grid(
+        [phase_panels],
+        OUTPUT_DIRECTORY / f"{PHASE_GRID_STEM}_{pct}pct.png",
+        f"EXP08 {pct}% phase differences to GT",
+        n_columns=4,
     )
 
-
-# ============================================================
-# 8) VISUALIZE & SAVE
-# ============================================================
-
-print("\nGenerating figures...")
-
-# ══ 8.1 ITPC timecourse figure: 10 subplots (one per intensity) ══
-intensity_pcts = [int(level * 100) for level in INTENSITY_LEVELS]
-n_samples = len(next(iter(raw_itpc_curves.values())))
-time_s = _epoch_times[itpc_mask]
-if n_samples != time_s.size:
-    raise RuntimeError("ITPC curve length does not match ITPC_WINDOW_S mask.")
-
-fig, axes = plt.subplots(len(intensity_pcts), 1, figsize=(11, 23), sharex=True, sharey=True)
-
-for i, (ax, intensity_pct, label) in enumerate(zip(np.atleast_1d(axes), intensity_pcts, INTENSITY_LABELS)):
-    # ─ Negative control: GT vs stim (should be LOW, confirming artifact separation)
-    ax.plot(time_s, stim_itpc_curves[intensity_pct], color=METHOD_COLORS["gt_ref"],
-            lw=2.0, label="GT vs stim (negative control)", linestyle="--", alpha=0.6)
-
-    # ─ Method curves: attempt to recover GT from EEG
-    ax.plot(time_s, raw_itpc_curves[intensity_pct], color=METHOD_COLORS["raw"],
-            lw=1.8, label="Raw fixed channel")
-    ax.plot(time_s, sass_itpc_curves[intensity_pct], color=METHOD_COLORS["sass"],
-            lw=1.8, label="SASS")
-    ax.plot(time_s, ssd_itpc_curves[intensity_pct], color=METHOD_COLORS["ssd"],
-            lw=1.8, label="SSD")
-
-    ax.set(ylim=(0, 1.05), xlim=(ITPC_WINDOW_S[0], ITPC_WINDOW_S[1]))
-    ax.set_ylabel("ITPC", fontsize=10)
-    ax.set_title(f"{label} intensity (n=20 epochs)", fontsize=11, color="#333")
-    ax.grid(True, alpha=0.15, linestyle=":", linewidth=0.5)
-    ax.axhline(y=1.0, color="red", linestyle=":", alpha=0.3, linewidth=0.8)
-    if i == 0:
-        ax.legend(frameon=False, loc="lower right", fontsize=9)
-
-axes = np.atleast_1d(axes)
-axes[-1].set_xlabel("Time within stimulus window (s)", fontsize=11, fontweight="bold")
-fig.suptitle("Ground-Truth Signal Recovery after Artremoved + 45 Hz Low-Pass",
-             fontsize=13, fontweight="bold", y=0.995)
-fig.tight_layout(rect=(0.0, 0.0, 1.0, 0.975))
-
-fig.savefig(ITPC_TIMECOURSE_FIGURE_PATH, dpi=220)
+# ITPC curves preserve time structure so the pulse-adjacent behavior stays visible.
+fig, axes = plt.subplots(5, 2, figsize=(11, 12), sharex=True, sharey=True)
+for ax, pct in zip(axes.ravel(), INTENSITY_PCTS):
+    for method in METHODS:
+        ax.plot(
+            phase_time_s,
+            np.asarray(results[pct][method]["itpc_curve"]),
+            label=METHOD_LABELS[method],
+            color=METHOD_COLORS[method],
+            linewidth=1.7,
+        )
+    ax.axvline(0.0, color="0.65", linewidth=0.8)
+    ax.set_title(f"{pct}%")
+    ax.set_ylim(0.0, 1.05)
+    ax.grid(alpha=0.2)
+axes[0, 0].legend(frameon=False, fontsize=8)
+fig.supxlabel("Time relative to pulse (s)")
+fig.supylabel("ITPC")
+fig.suptitle(f"EXP08 {TARGET_CENTER_HZ:.0f} Hz ITPC after artifact-removal")
+fig.tight_layout(rect=(0, 0, 1, 0.97))
+fig.savefig(ITPC_TIMESERIES_PATH, dpi=180)
 plt.close(fig)
-print(f"  Saved: {ITPC_TIMECOURSE_FIGURE_PATH.name}")
 
-# ══ 7.2 ITPC summary figure: mean ITPC vs. intensity (all methods) ══
-intensity_values = np.asarray([int(level * 100) for level in INTENSITY_LEVELS], dtype=float)
-raw_mean_itpc_values = np.asarray([np.mean(raw_itpc_curves[int(level * 100)]) for level in INTENSITY_LEVELS], dtype=float)
-sass_mean_itpc_values = np.asarray([np.mean(sass_itpc_curves[int(level * 100)]) for level in INTENSITY_LEVELS], dtype=float)
-ssd_mean_itpc_values = np.asarray([np.mean(ssd_itpc_curves[int(level * 100)]) for level in INTENSITY_LEVELS], dtype=float)
-
-summary_fig, summary_ax = plt.subplots(figsize=(10.2, 5.2))
-summary_ax.plot(intensity_values, raw_mean_itpc_values, color=METHOD_COLORS["raw"], lw=1.8, marker="o", ms=6, label="Raw")
-summary_ax.plot(intensity_values, sass_mean_itpc_values, color=METHOD_COLORS["sass"], lw=1.8, marker="o", ms=6, label="SASS")
-summary_ax.plot(intensity_values, ssd_mean_itpc_values, color=METHOD_COLORS["ssd"], lw=1.8, marker="o", ms=6, label="SSD")
-summary_ax.set(
-    xticks=intensity_values,
-    xlabel="Stimulus intensity (%)",
-    ylabel="Mean ON-window ITPC",
-    title="Ground-Truth Signal Recovery: ITPC after Artremoved + 45 Hz Low-Pass",
+# Summary figure reduces each method curve to mean ITPC over the same phase window.
+fig, ax = plt.subplots(figsize=(7.5, 4.5))
+for method in METHODS:
+    ax.plot(
+        INTENSITY_PCTS,
+        [float(results[pct][method]["mean_itpc"]) for pct in INTENSITY_PCTS],
+        marker="o",
+        label=METHOD_LABELS[method],
+        color=METHOD_COLORS[method],
+    )
+ax.set(
+    xlabel="Stimulation intensity (% MSO)",
+    ylabel=f"Mean ITPC, {PHASE_WINDOW_S[0]} to {PHASE_WINDOW_S[1]} s",
+    title=f"EXP08 {TARGET_CENTER_HZ:.0f} Hz ITPC summary",
+    ylim=(0.0, 1.05),
 )
-summary_ax.set_ylim((0, 1.05))
-summary_ax.legend(frameon=False, loc="upper right")
-summary_ax.grid(True, alpha=0.15, linestyle=":", linewidth=0.5)
-summary_fig.tight_layout()
-summary_fig.savefig(ITPC_SUMMARY_FIGURE_PATH, dpi=220)
-plt.close(summary_fig)
-print(f"  Saved: {ITPC_SUMMARY_FIGURE_PATH.name}")
+ax.grid(alpha=0.2)
+ax.legend(frameon=False)
+fig.tight_layout()
+fig.savefig(ITPC_SUMMARY_PATH, dpi=180)
+plt.close(fig)
 
-# ══ 8.3 PLV summary figure ══
-intensity_values_plv = np.asarray([int(level * 100) for level in INTENSITY_LEVELS], dtype=int)
-event_counts = np.asarray([20] * len(INTENSITY_LEVELS), dtype=int)
-
-plot_helpers.save_plv_method_summary_figure(
-    x_values=intensity_values_plv,
-    event_counts=event_counts,
-    method_series=[
-        {"label": "Raw", "values": np.asarray(raw_plv_by_intensity, dtype=float), "color": METHOD_COLORS["raw"], "linewidth": 1.8},
-        {"label": "SASS", "values": np.asarray(sass_plv_by_intensity, dtype=float), "color": METHOD_COLORS["sass"], "linewidth": 1.8},
-        {"label": "SSD", "values": np.asarray(ssd_plv_by_intensity, dtype=float), "color": METHOD_COLORS["ssd"], "linewidth": 1.8},
-        {"label": "GT vs STIM", "values": np.asarray(stim_plv_by_intensity, dtype=float), "color": METHOD_COLORS["gt_ref"], "linewidth": 1.8},
-    ],
-    output_path=PLV_SUMMARY_FIGURE_PATH,
-    title="Ground-Truth Signal Recovery: PLV after Artremoved + 45 Hz Low-Pass",
-    xlabel="Stimulus intensity (%)",
+# PLV uses the same stored method scores as ITPC, avoiding duplicated pipelines.
+plv_method_series = [
+    {
+        "label": METHOD_LABELS[method],
+        "values": [float(results[pct][method]["plv"]) for pct in INTENSITY_PCTS],
+        "color": METHOD_COLORS[method],
+    }
+    for method in METHODS
+]
+save_plv_method_summary_figure(
+    INTENSITY_PCTS,
+    [len(epochs_on_by_pct[pct]) for pct in INTENSITY_PCTS],
+    plv_method_series,
+    PLV_SUMMARY_PATH,
+    title=f"EXP08 {TARGET_CENTER_HZ:.0f} Hz PLV to GT",
+    ylabel=f"PLV, {SIGNAL_BAND_HZ[0]:.1f}-{SIGNAL_BAND_HZ[1]:.1f} Hz",
+    xlabel="Stimulation intensity (% MSO)",
 )
-print(f"  Saved: {PLV_SUMMARY_FIGURE_PATH.name}")
 
 
-# ══ 8.5 Write summary report ══
-print(f"  Writing summary...")
-with open(MANIFEST_PATH, "w", encoding="utf-8") as f:
-    f.write("=" * 80 + "\n")
-    f.write("EXP08 ARTIFACT FILTERING SUMMARY: Raw vs. SASS vs. SSD\n")
-    f.write("=" * 80 + "\n\n")
+# ============================================================
+# 5) SAVE MANIFEST
+# ============================================================
 
-    f.write("ANALYSIS OVERVIEW:\n")
-    f.write("  Compared three spatial filter paths for stimulus artifact suppression:\n")
-    f.write("    1. Raw: Fixed channel locked at 10% intensity (best SNR)\n")
-    f.write("    2. SASS: Covariance-based artifact subtraction (ON − late-OFF)\n")
-    f.write("    3. SSD: Signal-dominance eigendecomposition (signal vs. view bands)\n\n")
+# Manifest records component choices and scalar metrics for figure interpretation.
+manifest_lines = [
+    "EXP08 art-filtering comparison",
+    f"Epoch directory: {EPOCH_DIRECTORY}",
+    f"Target frequency: fixed {TARGET_CENTER_HZ:.1f} Hz",
+    f"Windows: ON={ON_WINDOW_S}, late-OFF={LATE_OFF_WINDOW_S}, phase={PHASE_WINDOW_S}",
+    f"Raw: fixed {RAW_CHANNEL_NAME}; SASS: skip=max({SASS_SKIP_COMPONENTS}, auto_null_count) "
+    f"then rank {N_SASS_COMPONENTS} components by PLV; SSD: rank top {N_SSD_COMPONENTS} by PLV.",
+    "",
+    "pct | raw_PLV | SASS_comp | SASS_lambda | SASS_PLV | SASS_auto_nulls | "
+    "SSD_comp | SSD_lambda | SSD_PLV | STIM_PLV",
+]
+manifest_lines += [
+    f"{row['pct']:>3} | {row['raw_plv']:.3f} | C{row['sass_component']} | "
+    f"{row['sass_lambda']:.3g} | {row['sass_plv']:.3f} | {row['sass_auto_nulls']} | "
+    f"C{row['ssd_component']} | {row['ssd_lambda']:.3g} | {row['ssd_plv']:.3f} | "
+    f"{row['stim_plv']:.3f}"
+    for row in selection_rows
+]
+manifest_lines += [
+    "",
+    "Saved outputs:",
+    str(ITPC_TIMESERIES_PATH),
+    str(ITPC_SUMMARY_PATH),
+    str(PLV_SUMMARY_PATH),
+]
+manifest_lines += [str(OUTPUT_DIRECTORY / f"{PHASE_GRID_STEM}_{pct}pct.png") for pct in INTENSITY_PCTS]
+MANIFEST_PATH.write_text("\n".join(manifest_lines) + "\n", encoding="utf-8")
 
-    f.write("RANKING CRITERION: SNR (signal-band power / view-band power, linear ratio)\n\n")
-
-    f.write("TIME WINDOWS:\n")
-    f.write(f"    ON: {ON_WINDOW_S[0]:.1f} to {ON_WINDOW_S[1]:.1f} s (stimulus present, full epoch)\n")
-    f.write(f"    ITPC/PLV: {ITPC_WINDOW_S[0]:.1f} to {ITPC_WINDOW_S[1]:.1f} s (phase locking analysis window)\n")
-    f.write(f"    late-OFF: {LATE_OFF_WINDOW_S[0]:.1f} to {LATE_OFF_WINDOW_S[1]:.1f} s (noise reference)\n\n")
-
-    f.write("FREQUENCY BANDS:\n")
-    f.write(f"    Signal band: {SIGNAL_BAND_HZ[0]:.1f}–{SIGNAL_BAND_HZ[1]:.1f} Hz (stimulus fundamental)\n")
-    f.write(f"    View band: {VIEW_BAND_HZ[0]:.1f}–{VIEW_BAND_HZ[1]:.1f} Hz (broadband reference)\n\n")
-
-    f.write("FILTERING:\n")
-    f.write(f"    In-memory causal low-pass: {ARTREMOVED_LOWPASS_HZ:.1f} Hz, order {ARTREMOVED_LOWPASS_ORDER}\n")
-    f.write("    Phase-band helper filters: causal band-pass, no zero-phase 50 Hz notch\n\n")
-
-    f.write("=" * 80 + "\n")
-    f.write("RESULTS BY INTENSITY\n")
-    f.write("=" * 80 + "\n")
-    f.write(f"{'Intensity':<12} {'Raw SNR':<12} {'SASS SNR':<12} {'SSD SNR':<12} {'Raw ITPC':<12} {'SASS ITPC':<12} {'SSD ITPC':<12}\n")
-    f.write("-" * 80 + "\n")
-
-    for i, intensity_label in enumerate(INTENSITY_LABELS):
-        intensity_pct = intensity_pcts[i]
-        raw_mean_itpc = np.mean(raw_itpc_curves[intensity_pct])
-        sass_mean_itpc = np.mean(sass_itpc_curves[intensity_pct])
-        ssd_mean_itpc = np.mean(ssd_itpc_curves[intensity_pct])
-        f.write(f"{intensity_label:<12} {raw_snr_by_intensity[i]:<12.3f} {sass_snr_by_intensity[i]:<12.3f} {ssd_snr_by_intensity[i]:<12.3f} ")
-        f.write(f"{raw_mean_itpc:<12.3f} {sass_mean_itpc:<12.3f} {ssd_mean_itpc:<12.3f}\n")
-
-    f.write("=" * 80 + "\n\n")
-
-    f.write("SELECTED CHANNELS/COMPONENTS:\n")
-    f.write(f"    Raw (locked): {best_channel_name}\n")
-    f.write("    SASS by intensity:\n")
-    for intensity_pct in intensity_pcts:
-        f.write(f"      {intensity_pct}%: {sass_channels_by_intensity[intensity_pct]}\n")
-    f.write("    SSD by intensity:\n")
-    for intensity_pct in intensity_pcts:
-        f.write(f"      {intensity_pct}%: Component {ssd_components_by_intensity[intensity_pct]}\n")
-
-    f.write("\n" + "=" * 80 + "\n")
-    f.write("OUTPUT FILES\n")
-    f.write("=" * 80 + "\n")
-    f.write(f"  {ITPC_TIMECOURSE_FIGURE_PATH.name}\n")
-    f.write(f"  {ITPC_SUMMARY_FIGURE_PATH.name}\n")
-    f.write(f"  {PLV_SUMMARY_FIGURE_PATH.name}\n")
-    f.write(f"  {PHASE_GRID_STEM}_*pct.png (10 files, one per intensity)\n")
-    f.write(f"  {MANIFEST_PATH.name}\n")
-
-print(f"  Saved: {MANIFEST_PATH.name}")
-
-# ══ 7.4 Print summary ══
-print("\n" + "=" * 80)
-print("EXP08 ARTIFACT FILTERING ANALYSIS COMPLETE")
-print("=" * 80)
-print(f"\nSummary:")
-print(f"  Raw SNR: {raw_snr_by_intensity[0]:.3f} (10%) -> {raw_snr_by_intensity[-1]:.3f} (100%)")
-print(f"  SASS SNR: {sass_snr_by_intensity[0]:.3f} (10%) -> {sass_snr_by_intensity[-1]:.3f} (100%)")
-print(f"  SSD SNR: {ssd_snr_by_intensity[0]:.3f} (10%) -> {ssd_snr_by_intensity[-1]:.3f} (100%)")
-print(f"\nOutput directory: {OUTPUT_DIRECTORY}")
-print(f"See {MANIFEST_PATH.name} for detailed results.\n")
+print(f"Saved figures and manifest in {OUTPUT_DIRECTORY}")

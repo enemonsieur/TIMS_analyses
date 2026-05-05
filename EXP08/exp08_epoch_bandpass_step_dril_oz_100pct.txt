@@ -1,0 +1,29 @@
+EXP08 EPOCH BANDPASS STEP DRIL
+================================================================================
+
+Input epochs: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_epochs_100pct_on_artremoved-epo.fif
+Representation: saved artremoved MNE epochs; Oz channel; per-epoch demeaned
+Channel: Oz
+Sampling rate: 1000.0 Hz
+Worst epoch index: 11
+Filter: causal Butterworth bandpass 11.0-14.0 Hz, order 2
+SOS sections: 2
+Manual section-vs-sosfilt max abs difference: 0.000000000 uV
+
+Executed first-section equation:
+y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
+sample_index=1001, time=0.001000s
+b0*x[n]: 0.000001778 uV
+b1*x[n-1]: 0.000000045 uV
+b2*x[n-2]: -0.000001773 uV
+-a1*y[n-1]: -0.660807269 uV
+-a2*y[n-2]: 0.294077473 uV
+sum -> y[n]: -0.366729747 uV
+
+Ringing metrics:
+input_peak_abs_uV in (-0.1, 0.8): 64.197671
+filtered_peak_abs_uV in (-0.1, 0.8): 2.572606
+filtered_pre_rms_uV (-0.25 to -0.02 s): 1.476173
+filtered_post_rms_uV (0.02 to 0.50 s): 1.530046
+
+Figure: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_epoch_bandpass_step_dril_oz_100pct.png

@@ -105,6 +105,27 @@ Second-pass cleanup means:
 The goal is a script whose final version reads like the actual analysis path,
 not like a debugging session that happened to work.
 
+### 2.1 Anti-patterns
+
+Do not introduce these — they obscure the analysis rather than clarify it:
+
+- **Selector functions over external references.** Picking a SASS/SSD component
+  by PLV-vs-ground-truth and then reporting that same PLV-vs-ground-truth is
+  circular and inflates the metric. Pick by definition (SASS skips the artifact
+  component, SSD takes the strongest eigenvalue component) and report.
+- **Wrappers around two-line scipy/numpy calls.** Filtering, flattening,
+  hilbert, PLV, ITPC, SNR are short enough to inline. A named helper is
+  justified only when reused in 3+ places.
+- **`filter_signal` (from `preprocessing.py`) in new scripts.** Use scipy
+  directly: `sos = butter(4, [lo, hi], btype="band", fs=sfreq, output="sos")`,
+  then `sosfiltfilt(sos, x, axis=-1)`.
+- **Metadata dicts on candidate lists** (`{kind, label, index, lambda, ...}`).
+  The script knows which method it is running; the index speaks for itself.
+- **Auto-tuners hidden in third-party modules** (e.g. `sass.find_n_nulls`).
+  Hard-code the choice; the reader should see it in the script.
+- **Constants for one-shot parameters** (`SASS_SKIP = 1`, `SSD_TAKE = 0`). Just
+  write `sass_W[1]` and `ssd_W[0]` directly — there is no second caller.
+
 ## 3. Default Script Shape
 
 Default order:
@@ -405,6 +426,22 @@ psd_freqs, raw_psd = compute_mean_psd(raw_epochs, sfreq, view_band_hz)
 ```
 
 Use this template as a drafting tool. The final script can be shorter than this skeleton, but it should still read in the same order: each output becomes the next input.
+
+### Review Diagrams For Existing Scripts
+
+When reviewing an existing script, draw what the script currently does before proposing changes. This is different from the design skeleton used before writing new code: the review diagram describes the script as written, including confusing structure, repeated transformations, unclear decision points, and output paths that make the result hard to interpret.
+
+Use **Current Flow** for the observed pipeline and **Proposed Flow** only after the review findings are clear. The current diagram should not be cleaned up to match intent; its job is to reveal where the script's structure creates risk. The proposed diagram should show the smallest scientifically valid structure that fixes the findings.
+
+For complex scripts, use several small diagrams instead of one overloaded diagram. Split diagrams at natural analysis boundaries: data preparation, method branches, scoring or selection, validation checks, and outputs. Each diagram should answer one structural question.
+
+When reviewing an existing script, report in this order:
+
+1. Findings
+2. Current Flow diagram
+3. TODO decisions, if the script contains TODOs
+4. Proposed Flow diagram
+5. Minimal refactor plan
 
 ### Comment Strategy in Template Skeleton
 
@@ -892,6 +929,16 @@ Bad:
 ```
 
 If warnings are predictable and do not matter to the analysis, either suppress them cleanly or explain why they are harmless. Do not leave noisy runtime output by default.
+
+### P-Level Findings For Script Reviews
+
+Use P-level findings when reviewing existing scripts:
+
+- `[P1]` scientific validity, interpretation, or result-corrupting risk
+- `[P2]` reproducibility, determinism, consistency, or maintainability risk
+- `[P3]` readability, cleanup, naming, or comment-quality issue
+
+Each finding should include the file and line, one concrete risk, and the smallest correction. P-level findings are for reviewing existing scripts; new-script work should still start with the pseudo-code skeleton and user validation.
 
 ## 9. Forbidden Patterns
 

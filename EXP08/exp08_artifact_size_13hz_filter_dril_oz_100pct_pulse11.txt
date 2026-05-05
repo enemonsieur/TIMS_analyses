@@ -1,0 +1,29 @@
+EXP08 ARTIFACT SIZE 13 HZ FILTER DRIL
+================================================================================
+
+Input raw file: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\TIMS_data_sync\pilot\doseresp\exp08-STIM-pulse_run01_10-100.vhdr
+Channel: Oz
+Sampling rate: 1000.0 Hz
+Pulse: 100% pulse 11, sample 970530
+Recovery sample: 970550, recovery_ms=20.000
+Recovery threshold: 1118.876567 uV
+Baseline noise SD: 5.849805 uV
+First-20ms artifact peak deviation: 55943.828356 uV
+Filter: causal Butterworth bandpass 11.0-14.0 Hz, order 2
+
+y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
+sample_index=501, time=0.001000s, huge-artifact input
+b0*x[n]: -2.075420599 uV
+b1*x[n-1]: -8.632864919 uV
+b2*x[n-2]: -6.266464364 uV
+-a1*y[n-1]: -806.709312192 uV
+-a2*y[n-2]: 221.075332712 uV
+sum -> y[n]: -602.608729361 uV
+
+Artifact-size sweep:
+label, scale, input_artifact_peak_uV, filtered_post_peak_uV, filtered_post_rms_uV
+no artifact, 0.000, 6701.702019, 36.954998, 15.743332
+mid artifact, 0.250, 18065.013649, 1446.360338, 625.817578
+huge artifact, 1.000, 92361.718750, 5686.468816, 2461.774284
+
+Figure: C:\Users\njeuk\OneDrive\Documents\Charite Berlin\TIMS\EXP08\exp08_artifact_size_13hz_filter_dril_oz_100pct_pulse11.png
